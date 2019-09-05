@@ -1,0 +1,10 @@
+#!/bin/bash
+#SBATCH -N 1
+#SBATCH -c 1
+#SBATCH --mem-per-cpu=24g
+#SBATCH -o "/usr/share/sequencing/projects/XXX/analysis/time-course/impulsejob_%j.out"
+#SBATCH --job-name R_impulse2
+
+module load R/latest
+
+Rscript /usr/share/sequencing/projects/XXX/analysis/time-course/impulse.R
