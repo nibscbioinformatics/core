@@ -1,0 +1,9 @@
+output:
+  html_document:
+    theme: readable
+    highlight: tango
+    toc: true
+    toc_float: true
+    css: nibsc_report.css
+editor_options:
+  chunk_output_type: console

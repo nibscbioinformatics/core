@@ -1,0 +1,38 @@
+h1 {
+  padding: 25px;
+  border-bottom: 2px solid #abe2f7
+}
+
+h1.title {
+  font-size: 40px;
+}
+
+h2 {
+  padding: 10px;
+  font-size: 26px;
+}
+
+p {
+  padding: 5px
+}
+
+table {
+  align: center;
+  align-items: center;
+  padding: 8px;
+  background-color: #f2faf9
+}
+
+.table {
+  align: center
+}
+
+.author {
+  font-style: italic;
+  color: #18b2ed
+}
+
+.date {
+  font-size: 14px;
+  font-style: italic;
+}
