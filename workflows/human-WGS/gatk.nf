@@ -1,13 +1,11 @@
 #!/opt/software/conda2/envs/NextFlow/bin/nextflow
 
-//This is a nextflow script to perform GATK4 best practice processing and then apply LoFreq for trimmed WGS fastq data
-//referred to code here for processes: https://github.com/lifebit-ai/GATK/blob/master/main.nf
-
+//This is a nextflow script to perform GATK4 best practice processing and apply haplotypecaller and mutect2
 
 params.referencefolder = "/home/AD/tbleazar/228redo/gatk_references/" //we require there to already be indexed references here
 params.outdir = "/home/AD/tbleazar/228redo/test"
-params.filepattern = "/home/AD/tbleazar/228redo/testinput/228_HT1080_test{_R1_001,_R2_001}.fastq.gz"
-//params.filepattern = "/usr/share/sequencing/projects/228/trimmed/228_HT1080_WT_P15_S1{_R1_001,_R2_001}.fastq.gz"
+//params.filepattern = "/home/AD/tbleazar/228redo/testinput/228_HT1080_test{_R1_001,_R2_001}.fastq.gz"
+params.filepattern = "/usr/share/sequencing/projects/228/trimmed/228_HT1080_WT_P15_S1{_R1_001,_R2_001}.fastq.gz"
 params.cpus = "32"
 
 Channel
@@ -21,6 +19,7 @@ references.into {
   ref1
   ref2
   ref3
+  ref4
 }
 
 process doalignment {
@@ -142,6 +141,10 @@ process indexrecalibrated {
 }
 
 forcaller = recalibratedforcaller.join(indexedbam)
+forcaller.into {
+  forcaller1
+  forcaller2
+}
 
 process haplotypecall {
   publishDir "$params.outdir/analysis", mode: "copy"
@@ -151,7 +154,7 @@ process haplotypecall {
   memory '240 GB'
 
   input:
-  set ( sampleprefix, file(bamfile), file(baifile) ) from forcaller
+  set ( sampleprefix, file(bamfile), file(baifile) ) from forcaller1
   file refs from ref3.first()
 
   output:
@@ -159,6 +162,27 @@ process haplotypecall {
 
   """
   module load GATK/4.1.3.0
-  gatk HaplotypeCaller -R ${refs}/hg19_v0_Homo_sapiens_assembly19.fasta -O ${sampleprefix}.hapcalled.vcf -I $bamfile --native-pair-hmm-threads ${params.cpus}
+  gatk HaplotypeCaller -R ${refs}/hg19_v0_Homo_sapiens_assembly19.fasta -O ${sampleprefix}.hapcalled.vcf -I $bamfile --native-pair-hmm-threads ${params.cpus} --dbsnp ${refs}/b37_dbsnp_138.b37.vcf
   """
 }
+
+process mutectcall {
+  publishDir "$params.outdir/analysis", mode: "copy"
+  cpus 32
+  queue 'WORK'
+  time '96h'
+  memory '240 GB'
+
+  input:
+  set ( sampleprefix, file(bamfile), file(baifile) ) from forcaller2
+  file refs from ref4.first()
+
+  output:
+  set ( sampleprefix, file("${sampleprefix}.mutcalled.vcf") ) into calledmuts
+
+  """
+  module load GATK/4.1.3.0
+  gatk Mutect2 -R ${refs}/hg19_v0_Homo_sapiens_assembly19.fasta -O ${sampleprefix}.mutcalled.vcf -I $bamfile --native-pair-hmm-threads ${params.cpus} --panel-of-normals ${refs}/somatic-b37_Mutect2-WGS-panel-b37.vcf
+  """
+}
+
