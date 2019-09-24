@@ -1,0 +1,33 @@
+#!/bin/bash
+#SBATCH -N 1
+#SBATCH -c 1
+#SBATCH --mem-per-cpu=24g
+#SBATCH --job-name salmon_index
+
+gencodeFile=$1
+outIndex=$2
+
+echo "### START - the job is starting at"
+date
+starttime=`date +"%s"`
+echo
+
+echo "the job is running on the node $SLURM_NODELIST"
+echo "job number $SLURM_JOB_ID"
+echo "STAT:jobName:salmon_$SLURM_JOB_ID\.out"
+echo "STAT:exechosts:$SLURM_NODELIST"
+echo
+
+###################################
+## executing salmon
+####################################
+
+salmon index --gencode -t $gencodeFile -i $outIndex -k 31
+
+
+echo "####END job finished"
+endtime=`date +"%s"`
+duration=$((endtime - starttime))
+echo "STAT:startTime:$starttime"
+echo "STAT:doneTime:$endtime"
+echo "STAT:runtime:$duration"
