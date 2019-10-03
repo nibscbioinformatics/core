@@ -8,12 +8,8 @@ params.referencegenome = "GRCh38.fa"
 params.genegtf = "hsa.ensembl.92.chr.gtf"
 params.cpus = "32"
 
-inputdirectory = file(params.indir)
-
-inputdirectory.into {
-  inputdirectory1
-  inputdirectory2
-}
+inputdirectory1 = file(params.indir)
+inputdirectory2 = file(params.indir)
 
 references = Channel
   .fromPath(params.referencefolder)
@@ -50,16 +46,19 @@ process forwardsets {
   cpus 1
   queue 'WORK'
   time '12h'
-  memory '4 GB
+  memory '4 GB'
 
   input:
-  file(forwardfile) from forwardfiles
+  file(forwardfile) from forwardfiles.flatten()
 
   output:
-  set ( val(stdout), file($forwardfile) ) into forwardsets
+  set ( val(sampleprefix), file("${sampleprefix}.setted.forward.fastq.gz") ) into forwardsets
 
+  script:
+  sampleprefix = (forwardfile.name).replace(".forward.fastq.gz","")
   """
-  echo $forwardfile | sed 's/.forward.fastq.gz//g'
+  basename=`echo $forwardfile | sed 's/.forward.fastq.gz//g'`
+  mv $forwardfile \${basename}.setted.forward.fastq.gz
   """
 }
 
@@ -88,16 +87,19 @@ process reversesets {
   cpus 1
   queue 'WORK'
   time '12h'
-  memory '4 GB
+  memory '4 GB'
 
   input:
-  file(reversefile) from reversefiles
+  file(reversefile) from reversefiles.flatten()
 
   output:
-  set ( val(stdout), file($reversefile) ) into reversesets
+  set ( val(sampleprefix), file("${sampleprefix}.setted.reverse.fastq.gz") ) into reversesets
 
+  script:
+  sampleprefix = (reversefile.name).replace(".reverse.fastq.gz","")
   """
-  echo $reversefile | sed 's/.reverse.fastq.gz//g'
+  basename=`echo $reversefile | sed 's/.reverse.fastq.gz//g'`
+  mv $reversefile \${basename}.setted.reverse.fastq.gz
   """
 }
 
@@ -143,7 +145,6 @@ process dotrimlog {
 }
 
 process dotophat {
-  publishDir "$params.outdir/alignments", mode: "copy"
   cpus 32
   queue 'WORK'
   time '24h'
@@ -154,7 +155,7 @@ process dotophat {
   file refs from ref1.first()
 
   output:
-  set ( sampleprefix, file("tophat_out/accepted_hits.bam") ) in bamfiles
+  set ( sampleprefix, file("tophat_out/accepted_hits.bam") ) into bamfiles
 
   """
   module load TopHat/2.1.1
@@ -162,7 +163,7 @@ process dotophat {
   module load SAMTools/latest
   referencebase=`echo ${params.referencegenome} | sed 's/.fasta//g' | sed 's/.fa//g'`
   gtfindexed=${params.genegtf}.indexed
-  tophat2 -p ${params.cpus} --library-type fr-firststrand --mate-inner-dist 50 -G ${refs}/${params.genegtf} --transcriptome-index ${refs}/\${gtfindexed} \${referencebase} $forwardtrimmed $reversetrimmed
+  tophat2 -p ${params.cpus} --library-type fr-firststrand --mate-inner-dist 50 -G ${refs}/${params.genegtf} --transcriptome-index ${refs}/\${gtfindexed} ${refs}/\${referencebase} $forwardtrimmed $reversetrimmed
   """
 }
 
@@ -177,7 +178,7 @@ process addreadgroups {
   set ( sampleprefix, file(bamfile) ) from bamfiles
 
   output:
-  set ( sampleprefix, file("${sampleprefix}.rg.bam") ) into readgrouped
+  set ( sampleprefix, file("${sampleprefix}.rg.bam") ) into (readgroupedforindex, readgroupedforht)
 
   """
   module load GATK/4.1.3.0
@@ -193,16 +194,18 @@ process indexbam {
   memory '8 GB'
 
   input:
-  set ( sampleprefix, file(rgfile) ) from readgrouped
+  set ( sampleprefix, file(rgfile) ) from readgroupedforindex
 
   output:
-  set ( sampleprefix, file("${rgfile}"), file("${rgfile}.bai") ) into bamindexed
+  set ( sampleprefix, file("${rgfile}.bai") ) into bamindexed
 
   """
   module load SAMTools/latest
   samtools index $rgfile
   """
 }
+
+bamforht = readgroupedforht.join(bamindexed)
 
 process dohtseq {
   publishDir "$params.outdir/analysis", mode: "copy"
@@ -212,7 +215,7 @@ process dohtseq {
   memory '20 GB'
 
   input:
-  set ( sampleprefix, file(bamfile), file(bamindex) ) from bamindexed
+  set ( sampleprefix, file(bamfile), file(bamindex) ) from bamforht
   file refs from ref2.first()
 
   output:
