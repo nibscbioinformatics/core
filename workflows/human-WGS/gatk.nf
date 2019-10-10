@@ -29,7 +29,7 @@ process doalignment {
   cpus 32
   queue 'WORK'
   time '48h'
-  memory '100 GB'
+  memory '20 GB'
 
   input:
   set ( sampleprefix, file(samples) ) from readpairs
@@ -46,10 +46,10 @@ process doalignment {
 
 process sorttobam {
   publishDir "$params.outdir/alignments", mode: "copy"
-  cpus 32
+  cpus 8
   queue 'WORK'
-  time '48h'
-  memory '240 GB'
+  time '8h'
+  memory '40 GB'
 
   input:
   set ( sampleprefix, file(unsortedsam) ) from samfile
@@ -65,10 +65,10 @@ process sorttobam {
 
 process markduplicates {
   publishDir "$params.outdir/alignments", mode: "copy"
-  cpus 32
+  cpus 8
   queue 'WORK'
-  time '48h'
-  memory '240 GB'
+  time '8h'
+  memory '40 GB'
 
   input:
   set ( sampleprefix, file(sortedbamfile) ) from sortedbam
@@ -84,10 +84,10 @@ process markduplicates {
 
 process baserecalibrationtable {
   publishDir "$params.outdir/alignments", mode: "copy"
-  cpus 32
+  cpus 8
   queue 'WORK'
-  time '48h'
-  memory '240 GB'
+  time '8h'
+  memory '40 GB'
 
   input:
   set ( sampleprefix, file(markedbamfile) ) from markedbamfortable
@@ -106,10 +106,10 @@ forrecal = recaltable.join(markedbamforapply)
 
 process applybaserecalibration {
   publishDir "$params.outdir/alignments", mode: "copy"
-  cpus 32
+  cpus 8
   queue 'WORK'
-  time '48h'
-  memory '240 GB'
+  time '8h'
+  memory '40 GB'
 
   input:
   set ( sampleprefix, file(recalibrationtable), file(markedbamfile) ) from forrecal
@@ -125,10 +125,10 @@ process applybaserecalibration {
 
 process indexrecalibrated {
   publishDir "$params.outdir/alignments", mode: "copy"
-  cpus 32
+  cpus 8
   queue 'WORK'
-  time '48h'
-  memory '240 GB'
+  time '8h'
+  memory '40 GB'
 
   input:
   set ( sampleprefix, file(bqsrfile) ) from recalibratedforindex
@@ -153,7 +153,7 @@ process haplotypecall {
   cpus 32
   queue 'WORK'
   time '48h'
-  memory '240 GB'
+  memory '40 GB'
 
   input:
   set ( sampleprefix, file(bamfile), file(baifile) ) from forcaller1
@@ -172,8 +172,8 @@ process mutectcall {
   publishDir "$params.outdir/analysis", mode: "copy"
   cpus 32
   queue 'WORK'
-  time '96h'
-  memory '240 GB'
+  time '48h'
+  memory '40 GB'
 
   input:
   set ( sampleprefix, file(bamfile), file(baifile) ) from forcaller2
@@ -191,10 +191,10 @@ process mutectcall {
 rawvars = calledhaps.join(calledmuts)
 
 process snpindelsplit {
-  cpus 32
+  cpus 8
   queue 'WORK'
-  time '96h'
-  memory '240 GB'
+  time '8h'
+  memory '40 GB'
 
   input:
   set ( sampleprefix, file(hapfile), file(mutfile) ) from rawvars
@@ -212,10 +212,11 @@ process snpindelsplit {
 }
 
 process hardfilter {
-  cpus 32
+  publishDir "$params.outdir/analysis", mode: "copy"
+  cpus 8
   queue 'WORK'
-  time '96h'
-  memory '240 GB'
+  time '8h'
+  memory '40 GB'
 
   input:
   set ( sampleprefix, file(hapsnp), file(hapindel), file(mutsnp), file(mutindel) ) from splitupvars
@@ -234,10 +235,11 @@ process hardfilter {
 }
 
 process variantevaluation {
-  cpus 32
+  publishDir "$params.outdir/analysis", mode: "copy"
+  cpus 8
   queue 'WORK'
-  time '96h'
-  memory '240 GB'
+  time '8h'
+  memory '40 GB'
 
   input:
   set ( sampleprefix, file(germlinesnp), file(germlineindel), file(somaticsnp), file(somaticindel) ) from filteredvars
