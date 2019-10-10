@@ -20,6 +20,8 @@ references.into {
   ref2
   ref3
   ref4
+  ref5
+  ref6
 }
 
 process doalignment {
@@ -185,4 +187,72 @@ process mutectcall {
   gatk Mutect2 -R ${refs}/hg19_v0_Homo_sapiens_assembly19.fasta -O ${sampleprefix}.mutcalled.vcf -I $bamfile --native-pair-hmm-threads ${params.cpus} --panel-of-normals ${refs}/somatic-b37_Mutect2-WGS-panel-b37.vcf
   """
 }
+
+rawvars = calledhaps.join(calledmuts)
+
+process snpindelsplit {
+  cpus 32
+  queue 'WORK'
+  time '96h'
+  memory '240 GB'
+
+  input:
+  set ( sampleprefix, file(hapfile), file(mutfile) ) from rawvars
+
+  output:
+  set ( sampleprefix, file("${sampleprefix}.hapcalled.snp.vcf"), file("${sampleprefix}.hapcalled.indel.vcf"), file("${sampleprefix}.mutcalled.snp.vcf"), file("${sampleprefix}.mutcalled.indel.vcf") ) into splitupvars
+
+  """
+  module load GATK/4.1.3.0
+  gatk SelectVariants -V $hapfile -O ${sampleprefix}.hapcalled.snp.vcf -select-type SNP
+  gatk SelectVariants -V $hapfile -O ${sampleprefix}.hapcalled.indel.vcf -select-type INDEL
+  gatk SelectVariants -V $mutfile -O ${sampleprefix}.mutcalled.snp.vcf -select-type SNP
+  gatk SelectVariants -V $mutfile -O ${sampleprefix}.mutcalled.indel.vcf -select-type INDEL
+  """
+}
+
+process hardfilter {
+  cpus 32
+  queue 'WORK'
+  time '96h'
+  memory '240 GB'
+
+  input:
+  set ( sampleprefix, file(hapsnp), file(hapindel), file(mutsnp), file(mutindel) ) from splitupvars
+  file refs from ref5.first()
+
+  output:
+  set ( sampleprefix, file("${sampleprefix}.germline.filtered.snp.vcf"), file("${sampleprefix}.germline.filtered.indel.vcf"), file("${sampleprefix}.somatic.filtered.snp.vcf"), file("${sampleprefix}.somatic.filtered.indel.vcf") ) into filteredvars
+
+  """
+  module load GATK/4.1.3.0
+  gatk VariantFiltration -O ${sampleprefix}.germline.filtered.snp.vcf -V $hapsnp -R ${refs}/hg19_v0_Homo_sapiens_assembly19.fasta --filter-name snpfilter --filter-expression "QD < 2.0 || MQ < 40.0 || FS > 60.0 || SOR > 3.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0"
+  gatk VariantFiltration -O ${sampleprefix}.germline.filtered.indel.vcf -V $hapindel -R ${refs}/hg19_v0_Homo_sapiens_assembly19.fasta --filter-name indelfilter --filter-expression "QD < 2.0 || FS > 200.0 || SOR > 10.0 || ReadPosRankSum < -20.0"
+  gatk VariantFiltration -O ${sampleprefix}.somatic.filtered.snp.vcf -V $mutsnp -R ${refs}/hg19_v0_Homo_sapiens_assembly19.fasta --filter-name snpfilter --filter-expression "QD < 2.0 || MQ < 40.0 || FS > 60.0 || SOR > 3.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0"
+  gatk VariantFiltration -O ${sampleprefix}.somatic.filtered.indel.vcf -V $mutindel -R ${refs}/hg19_v0_Homo_sapiens_assembly19.fasta --filter-name indelfilter --filter-expression "QD < 2.0 || FS > 200.0 || SOR > 10.0 || ReadPosRankSum < -20.0"
+  """
+}
+
+process variantevaluation {
+  cpus 32
+  queue 'WORK'
+  time '96h'
+  memory '240 GB'
+
+  input:
+  set ( sampleprefix, file(germlinesnp), file(germlineindel), file(somaticsnp), file(somaticindel) ) from filteredvars
+  file refs from ref6.first()
+
+  output:
+  set ( sampleprefix, file("${sampleprefix}.germline.snp.eval.grp"), file("${sampleprefix}.germline.indel.eval.grp"), file("${sampleprefix}.somatic.snp.eval.grp"), file("${sampleprefix}.somatic.indel.eval.grp") ) into variantevaluations
+
+  """
+  module load GATK/4.1.3.0
+  gatk VariantEval -eval $germlinesnp -O ${sampleprefix}.germline.snp.eval.grp -R ${refs}/hg19_v0_Homo_sapiens_assembly19.fasta
+  gatk VariantEval -eval $germlineindel -O ${sampleprefix}.germline.indel.eval.grp -R ${refs}/hg19_v0_Homo_sapiens_assembly19.fasta
+  gatk VariantEval -eval $somaticsnp -O ${sampleprefix}.somatic.snp.eval.grp -R ${refs}/hg19_v0_Homo_sapiens_assembly19.fasta
+  gatk VariantEval -eval $somaticindel -O ${sampleprefix}.somatic.indel.eval.grp -R ${refs}/hg19_v0_Homo_sapiens_assembly19.fasta
+  """
+}
+
 
