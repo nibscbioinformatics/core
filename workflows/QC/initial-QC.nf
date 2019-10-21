@@ -58,7 +58,7 @@ process forwardsets {
   sampleprefix = (forwardfile.name).replace(".forward.fastq.gz","")
   """
   basename=`echo $forwardfile | sed 's/.forward.fastq.gz//g'`
-  mv $forwardfile \${basename}.setted.forward.fastq.gz
+  mv $forwardfile \${basename}_L001_R1_001.fastq.gz
   """
 }
 
@@ -105,7 +105,7 @@ process reversesets {
   sampleprefix = (reversefile.name).replace(".reverse.fastq.gz","")
   """
   basename=`echo $reversefile | sed 's/.reverse.fastq.gz//g'`
-  mv $reversefile \${basename}.setted.reverse.fastq.gz
+  mv $reversefile \${basename}_L001_R2_001.fastq.gz
   """
 }
 //end of merging section
@@ -118,4 +118,54 @@ if (params.mergelanes) {
   Channel.fromFilePairs(filepattern).set{readschannel}
 }
 
+readschannel.into {
+  readsforfastqc
+  readsforfastqscreen
+}
+
+process dofastqc {
+  publishDir "$params.qcdir", mode: "copy"
+  cpus 1
+  queue 'WORK'
+  time '8h'
+  memory '10 GB'
+
+  input:
+  set ( sampleprefix, file(forwardreads), file(reversereads) ) from readsforfastqc
+
+  output:
+  set ( sampleprefix, file("${forwardhtml}"), file("${reversehtml}") ) into fastqchtmls
+
+  script:
+  forwardhtml = (forwardreads.name).replace(".fastq.gz","_fastqc.html")
+  reversehtml = (reversereads.name).replace(".fastq.gz","_fastqc.html")
+  """
+  module load FastQC/latest
+  fastqc $forwardreads
+  fastqc $reversereads
+  """
+}
+
+process dofastqscreen {
+  publishDir "$params.qcdir", mode: "copy"
+  cpus 8
+  queue 'WORK'
+  time '8h'
+  memory '50 GB'
+
+  input:
+  set ( sampleprefix, file(forwardreads), file(reversereads) ) from readsforfastqscreen
+
+  output:
+  set ( sampleprefix, file("${forwardhtml}"), file("${reversehtml}") ) into fastqscreenhtmls
+
+  script:
+  forwardhtml = (forwardreads.name).replace(".fastq.gz","_screen.html")
+  reversehtml = (reversereads.name).replace(".fastq.gz","_screen.html")
+  """
+  module load fastq-screen/0.13.0
+  fastq_screen $forwardreads
+  fastq_screen $reversereads
+  """
+}
 
