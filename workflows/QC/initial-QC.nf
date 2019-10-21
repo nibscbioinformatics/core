@@ -16,7 +16,6 @@ if (params.mergelanes) {
 }
 
 process mergeforwardlanes {
-  publishDir "$params.outdir/alignments", mode: "copy"
   cpus 1
   queue 'WORK'
   time '12h'
@@ -49,7 +48,7 @@ process forwardsets {
   file(forwardfile) from forwardfiles.flatten()
 
   output:
-  set ( val(sampleprefix), file("${sampleprefix}.setted.forward.fastq.gz") ) into forwardsets
+  set ( val(sampleprefix), file("${sampleprefix}_L001_R1_001.fastq.gz") ) into forwardsets
 
   when:
   params.mergelanes
@@ -63,7 +62,6 @@ process forwardsets {
 }
 
 process mergereverselanes {
-  publishDir "$params.outdir/alignments", mode: "copy"
   cpus 1
   queue 'WORK'
   time '12h'
@@ -96,7 +94,7 @@ process reversesets {
   file(reversefile) from reversefiles.flatten()
 
   output:
-  set ( val(sampleprefix), file("${sampleprefix}.setted.reverse.fastq.gz") ) into reversesets
+  set ( val(sampleprefix), file("${sampleprefix}_L001_R2_001.fastq.gz") ) into reversesets
 
   when:
   params.mergelanes
