@@ -5,7 +5,6 @@ params.mergelanes = false
 params.indir = "/usr/share/sequencing/projects/272/raw_data"
 params.qcdir = "/usr/share/sequencing/projects/272/qc-nf"
 
-
 //merging four lanes only when params.mergelanes = true
 if (params.mergelanes) {
   inputdirectory1 = file(params.indir)
@@ -113,7 +112,7 @@ if (params.mergelanes) {
   readschannel = forwardsets.join(reversesets)
 } else {
   filepattern = params.indir + "/*{_L001_R1_001,_L001_R2_001}.fastq.gz"
-  Channel.fromFilePairs(filepattern).set{readschannel}
+  Channel.fromFilePairs(filepattern, flat: true).set{readschannel}
 }
 
 readschannel.into {
@@ -132,11 +131,8 @@ process dofastqc {
   set ( sampleprefix, file(forwardreads), file(reversereads) ) from readsforfastqc
 
   output:
-  set ( sampleprefix, file("${forwardhtml}"), file("${reversehtml}") ) into fastqchtmls
+  file "*_fastqc.{zip,html}" into fastqcout
 
-  script:
-  forwardhtml = (forwardreads.name).replace(".fastq.gz","_fastqc.html")
-  reversehtml = (reversereads.name).replace(".fastq.gz","_fastqc.html")
   """
   module load FastQC/latest
   fastqc $forwardreads
@@ -155,15 +151,35 @@ process dofastqscreen {
   set ( sampleprefix, file(forwardreads), file(reversereads) ) from readsforfastqscreen
 
   output:
-  set ( sampleprefix, file("${forwardhtml}"), file("${reversehtml}") ) into fastqscreenhtmls
+  file "*_screen.{html,txt}" into fastqscreenout
 
-  script:
-  forwardhtml = (forwardreads.name).replace(".fastq.gz","_screen.html")
-  reversehtml = (reversereads.name).replace(".fastq.gz","_screen.html")
   """
   module load fastq-screen/0.13.0
   fastq_screen $forwardreads
   fastq_screen $reversereads
   """
 }
+
+qcmixed = fastqcout.mix(fastqscreenout)
+
+process domultiqc {
+  publishDir "$params.qcdir", mode: "copy"
+  cpus 8
+  queue 'WORK'
+  time '8h'
+  memory '50 GB'
+
+  input:
+  file "qccollected/*" from qcmixed.collect()
+
+  output:
+  file "multiqc_report.html" into multiqc_report
+  file "multiqc_data"
+
+  """
+  module load multiqc/1.7
+  multiqc --interactive qccollected
+  """
+}
+
 
