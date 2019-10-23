@@ -1,8 +1,6 @@
 //This is a nextflow script to be run with
 //nextflow run cutlo.nf
-//after running
-//module load NextFlow/latest
-//Performs basic cutadapt trimming, then alignment with bwa
+//Performs basic cutadapt trimming, then alignment with bwa, then variant calling with lofreq
 
 params.filepattern = "/usr/share/sequencing/miseq/output/161007_M01745_0131_000000000-ATN6R/Data/Intensities/BaseCalls/049*{_L001_R1_001,_L001_R2_001}.fastq.gz"
 params.adapterfile = "/home/AD/tbleazar/usrlocalmark/NexteraPE-PE.fa"
