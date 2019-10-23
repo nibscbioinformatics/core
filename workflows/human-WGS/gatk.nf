@@ -90,7 +90,7 @@ process baserecalibrationtable {
   publishDir "$params.outdir/alignments", mode: "copy"
   cpus 8
   queue 'WORK'
-  time '8h'
+  time '16h'
   memory '40 GB'
 
   input:
@@ -112,7 +112,7 @@ process applybaserecalibration {
   publishDir "$params.outdir/alignments", mode: "copy"
   cpus 8
   queue 'WORK'
-  time '8h'
+  time '16h'
   memory '40 GB'
 
   input:
@@ -131,7 +131,7 @@ process indexrecalibrated {
   publishDir "$params.outdir/alignments", mode: "copy"
   cpus 8
   queue 'WORK'
-  time '8h'
+  time '16h'
   memory '40 GB'
 
   input:
@@ -248,7 +248,7 @@ process remergevars {
   set ( sampleprefix, file(germlinesnp), file(germlineindel), file(somaticsnp), file(somaticindel) ) from filteredvars
 
   output:
-  set ( sampleprefix, file("${sampleprefix}.germline.vcf"), file("${sampleprefix}.somatic.vcf") ) into (germsomvars1, germsomvars2)
+  set ( sampleprefix, file("${sampleprefix}.germline.vcf"), file("${sampleprefix}.germline.vcf.idx"), file("${sampleprefix}.somatic.vcf"), file("${sampleprefix}.somatic.vcf.idx") ) into (germsomvars1, germsomvars2)
 
   """
   module load GATK/4.1.3.0
@@ -265,7 +265,7 @@ process variantevaluation {
   memory '40 GB'
 
   input:
-  set ( sampleprefix, file(germline), file(somatic) ) from germsomvars1
+  set ( sampleprefix, file(germline), file(germlineindex), file(somatic), file(somaticindex) ) from germsomvars1
   file refs from ref6.first()
 
   output:
@@ -286,7 +286,7 @@ process effectprediction {
   memory '40 GB'
 
   input:
-  set ( sampleprefix, file(germline), file(somatic) ) from germsomvars2
+  set ( sampleprefix, file(germline), file(germlineindex), file(somatic), file(somaticindex) ) from germsomvars2
 
   output:
   set ( sampleprefix, file("${sampleprefix}.germline.annotated.vcf"), file("${sampleprefix}.somatic.annotated.vcf") ) into annotatedvars
