@@ -167,6 +167,10 @@ process samtoolsindex {
 }
 
 forcall = indelqualforcall.join(samindex)
+forcall.into {
+  forcall1
+  forcall2
+}
 
 process varcall {
   publishDir "$params.outdir/analysis", mode: "copy"
@@ -176,7 +180,7 @@ process varcall {
   memory '24 GB'
 
   input:
-  set ( sampleprefix, file(indelqualfile), file(samindexfile) ) from forcall
+  set ( sampleprefix, file(indelqualfile), file(samindexfile) ) from forcall1
   file refs from ref4.first()
 
   output:
@@ -187,3 +191,26 @@ process varcall {
   lofreq call -f ${refs}/${params.referencefile} -o ${sampleprefix}.lofreq.vcf --call-indels $indelqualfile
   """
 }
+
+process dodepth {
+  publishDir "$params.outdir/alignments", mode: "copy"
+  cpus 1
+  queue 'WORK'
+  time '12h'
+  memory '50 GB'
+
+  input:
+  set ( sampleprefix, file(indelqualfile), file(samindexfile) ) from forcall2
+
+  output:
+  set ( sampleprefix, file("${sampleprefix}.samtools.depth") ) into samdepthout
+
+  """
+  module load SAMTools/latest
+  samtools depth -aa $indelqualfile > ${sampleprefix}.samtools.depth
+  """
+}
+
+
+
+
