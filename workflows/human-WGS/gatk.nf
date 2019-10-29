@@ -11,6 +11,7 @@ params.dbsnp = "b37_dbsnp_138.b37.vcf"
 params.goldindels = "b37_Mills_and_1000G_gold_standard.indels.b37.vcf"
 params.genomefasta = "hg19_v0_Homo_sapiens_assembly19.fasta"
 params.normpanel = "somatic-b37_Mutect2-WGS-panel-b37.vcf"
+params.gnomad = "somatic-b37_af-only-gnomad.raw.sites.vcf"
 
 Channel
   .fromFilePairs(params.filepattern)
@@ -188,7 +189,7 @@ process mutectcall {
 
   """
   module load GATK/4.1.3.0
-  gatk Mutect2 -R ${refs}/${params.genomefasta} -O ${sampleprefix}.mutcalled.vcf -I $bamfile --native-pair-hmm-threads ${params.cpus} --panel-of-normals ${refs}/${params.normpanel}
+  gatk Mutect2 -R ${refs}/${params.genomefasta} -O ${sampleprefix}.mutcalled.vcf -I $bamfile --native-pair-hmm-threads ${params.cpus} --panel-of-normals ${refs}/${params.normpanel} --germline-resource ${refs}/${params.gnomad}
   """
 }
 
