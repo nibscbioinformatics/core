@@ -27,6 +27,7 @@ references.into {
   ref4
   ref5
   ref6
+  ref7
 }
 
 process doalignment {
@@ -185,7 +186,7 @@ process mutectcall {
   file refs from ref4.first()
 
   output:
-  set ( sampleprefix, file("${sampleprefix}.mutcalled.vcf") ) into calledmuts
+  set ( sampleprefix, file("${sampleprefix}.mutcalled.vcf", file("${sampleprefix}.mutcalled.vcf.stats") ) into calledmuts
 
   """
   module load GATK/4.1.3.0
@@ -193,7 +194,27 @@ process mutectcall {
   """
 }
 
-rawvars = calledhaps.join(calledmuts)
+process mutectfilter {
+  publishDir "$params.outdir/analysis", mode: "copy"
+  cpus 32
+  queue 'WORK'
+  time '24h'
+  memory '40 GB'
+
+  input:
+  set ( sampleprefix, file(mutvcf), file(mutstats) ) from calledmuts
+  file refs from ref7.first()
+
+  output:
+  set ( sampleprefix, file("${sampleprefix}.mutcalled.filtered.vcf") ) into filteredmuts
+
+  """
+  module load GATK/4.1.3.0
+  gatk FilterMutectCalls -R ${refs}/${params.genomefasta} -V $mutvcf -O ${sampleprefix}.mutcalled.filtered.vcf
+  """
+}
+
+rawvars = calledhaps.join(filteredmuts)
 
 process snpindelsplit {
   cpus 8
