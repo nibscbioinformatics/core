@@ -2,7 +2,7 @@
 
 //This is a nextflow script to perform GATK4 best practice processing and apply haplotypecaller and mutect2
 
-params.referencefolder = "/home/AD/tbleazar/228redo/gatk_references/" //we require there to already be indexed references here
+params.referencefolder = "/usr/share/sequencing/references/homo_sapiens/hg19/gatk_references/" //we require there to already be indexed references here
 params.outdir = "/home/AD/tbleazar/228redo/output"
 //params.filepattern = "/home/AD/tbleazar/228redo/testinput/228_HT1080_test{_R1_001,_R2_001}.fastq.gz"
 params.filepattern = "/usr/share/sequencing/projects/228/trimmed/228_HT1080_WT_P15_S1{_R1_001,_R2_001}.fastq.gz"
@@ -186,7 +186,7 @@ process mutectcall {
   file refs from ref4.first()
 
   output:
-  set ( sampleprefix, file("${sampleprefix}.mutcalled.vcf", file("${sampleprefix}.mutcalled.vcf.stats") ) into calledmuts
+  set ( sampleprefix, file("${sampleprefix}.mutcalled.vcf"), file("${sampleprefix}.mutcalled.vcf.stats") ) into calledmuts
 
   """
   module load GATK/4.1.3.0

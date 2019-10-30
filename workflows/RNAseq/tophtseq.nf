@@ -1,15 +1,13 @@
 //This is a nextflow script to process RNA-seq fastq data through trimming to tophat to htseq-count
 
 params.indir = "/usr/share/sequencing/projects/272/raw_data/"
-params.adapterfile = "/home/AD/tbleazar/usrlocalmark/TruSeq-adapters-recommended.fa"
+params.adapterfile = "/usr/share/sequencing/references/adapters/TruSeq-adapters-recommended.fa"
 params.outdir = "/usr/share/sequencing/projects/272/"
-params.referencefolder = "/usr/share/sequencing/projects/132/reference/" //and it is required that this have an indexed genome already
+params.referencefolder = "/usr/share/sequencing/references/homo_sapiens/GRCh38/rnaseq/" //and it is required that this have an indexed genome already
 params.referencegenome = "GRCh38.fa"
 params.genegtf = "hsa.ensembl.92.chr.gtf"
 params.cpus = "32"
-
-inputdirectory1 = file(params.indir)
-inputdirectory2 = file(params.indir)
+params.mergelanes = true
 
 references = Channel
   .fromPath(params.referencefolder)
@@ -21,8 +19,16 @@ references.into {
   ref4
 }
 
+//merging four lanes only when params.mergelanes = true
+if (params.mergelanes) {
+  inputdirectory1 = file(params.indir)
+  inputdirectory2 = file(params.indir)
+} else {
+  inputdirectory1 = Channel.empty()
+  inputdirectory2 = Channel.empty()
+}
+
 process mergeforwardlanes {
-  publishDir "$params.outdir/alignments", mode: "copy"
   cpus 1
   queue 'WORK'
   time '12h'
@@ -33,6 +39,9 @@ process mergeforwardlanes {
 
   output:
   file('*.forward.fastq.gz') into forwardfiles
+
+  when:
+  params.mergelanes
 
   """
   for samplename in `ls $inputdir | grep _L001_R1_001.fastq.gz | sed 's/_L001_R1_001.fastq.gz//g'`
@@ -52,18 +61,20 @@ process forwardsets {
   file(forwardfile) from forwardfiles.flatten()
 
   output:
-  set ( val(sampleprefix), file("${sampleprefix}.setted.forward.fastq.gz") ) into forwardsets
+  set ( val(sampleprefix), file("${sampleprefix}_L001_R1_001.fastq.gz") ) into forwardsets
+
+  when:
+  params.mergelanes
 
   script:
   sampleprefix = (forwardfile.name).replace(".forward.fastq.gz","")
   """
   basename=`echo $forwardfile | sed 's/.forward.fastq.gz//g'`
-  mv $forwardfile \${basename}.setted.forward.fastq.gz
+  mv $forwardfile \${basename}_L001_R1_001.fastq.gz
   """
 }
 
 process mergereverselanes {
-  publishDir "$params.outdir/alignments", mode: "copy"
   cpus 1
   queue 'WORK'
   time '12h'
@@ -74,6 +85,9 @@ process mergereverselanes {
 
   output:
   file('*.reverse.fastq.gz') into reversefiles
+
+  when:
+  params.mergelanes
 
   """
   for samplename in `ls $inputdir | grep _L001_R2_001.fastq.gz | sed 's/_L001_R2_001.fastq.gz//g'`
@@ -93,17 +107,27 @@ process reversesets {
   file(reversefile) from reversefiles.flatten()
 
   output:
-  set ( val(sampleprefix), file("${sampleprefix}.setted.reverse.fastq.gz") ) into reversesets
+  set ( val(sampleprefix), file("${sampleprefix}_L001_R2_001.fastq.gz") ) into reversesets
+
+  when:
+  params.mergelanes
 
   script:
   sampleprefix = (reversefile.name).replace(".reverse.fastq.gz","")
   """
   basename=`echo $reversefile | sed 's/.reverse.fastq.gz//g'`
-  mv $reversefile \${basename}.setted.reverse.fastq.gz
+  mv $reversefile \${basename}_L001_R2_001.fastq.gz
   """
 }
+//end of merging section
 
-fortrim = forwardsets.join(reversesets)
+//conditionally readschannel is either a join from the forward and reverse sets, or it is just the channel from filepairs
+if (params.mergelanes) {
+  readschannel = forwardsets.join(reversesets)
+} else {
+  filepattern = params.indir + "/*{_L001_R1_001,_L001_R2_001}.fastq.gz"
+  Channel.fromFilePairs(filepattern, flat: true).set{readschannel}
+}
 
 process docutadapt {
   publishDir "$params.outdir/alignments", mode: "copy"
@@ -113,7 +137,7 @@ process docutadapt {
   memory '8 GB'
 
   input:
-  set ( sampleprefix, file(forwardraw), file(reverseraw) ) from fortrim
+  set ( sampleprefix, file(forwardraw), file(reverseraw) ) from readschannel
 
   output:
   set ( sampleprefix, file("${sampleprefix}_L001_R1_001.trimmed.fastq.gz"), file("${sampleprefix}_L001_R2_001.trimmed.fastq.gz") ) into (trimmingoutput1, trimmingoutput2)
