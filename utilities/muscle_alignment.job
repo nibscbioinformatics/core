@@ -28,7 +28,8 @@ echo
 
 echo "alignment is starting"
 
-muscle -in $input -maxiters 2 -clwout ${output}.aln -fastaout ${output}.aln.fasta -msfout ${output}.msf
+FOLDER=/usr/share/sequencing/tools
+$FOLDER/muscle3.8.31_i86linux64 -in $input -maxiters 2 -clwout ${output}.aln -fastaout ${output}.aln.fasta -msfout ${output}.msf
 
 
 
