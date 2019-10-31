@@ -5,7 +5,7 @@
 #SBATCH --job-name muscle-align
 
 input=$1
-output=${input%fasta}
+output=${input%.fasta}
 
 #################################################
 # JOB STATISTICS
