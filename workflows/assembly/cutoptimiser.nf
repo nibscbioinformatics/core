@@ -1,4 +1,4 @@
-//This is a nextflow script to trim and then use velveth and velvetg with hardcoded parameters based on an experiment to assemble
+//This is a nextflow script to trim and then use velvetoptimiser to assemble
 
 params.filepattern = "/usr/share/sequencing/miseq/output/161007_M01745_0131_000000000-ATN6R/Data/Intensities/BaseCalls/049*{_L001_R1_001,_L001_R2_001}.fastq.gz"
 params.adapterfile = "/usr/share/sequencing/references/adapters//NexteraPE-PE.fa"
@@ -50,7 +50,8 @@ process dotrimlog {
   """
 }
 
-process dovelveth {
+process dovelvet {
+  publishDir "$params.outdir/analysis", mode: "copy"
   cpus 32
   queue 'WORK'
   time '24h'
@@ -60,47 +61,12 @@ process dovelveth {
   set ( sampleprefix, file(forwardfile), file(reversefile) ) from trimmingoutput1
 
   output:
-  set ( sampleprefix, file("${sampleprefix}_assembly") ) into (velvethoutput1, velvethoutput2)
+  set ( sampleprefix, file("${sampleprefix}_velvet"), file("${sampleprefix}_velvetlog.txt") ) into velvetoutput
 
   """
   module load velvetoptimiser/2.2.6
-  velveth ${sampleprefix}_assembly 75 -fastq.gz -shortPaired -separate $forwardfile $reversefile
+  VelvetOptimiser.pl -s 25 -e 145 -t ${params.cpus} -p vorun -m "-0.001" -f '-fastq.gz -shortPaired -separate $forwardfile $reversefile'
+  mv `ls | grep vorun_data` ${sampleprefix}_velvet
+  mv vorun_logfile.txt ${sampleprefix}_velvetlog.txt
   """
 }
-
-process dovelvetglong {
-  publishDir "$params.outdir/analysis", mode: "copy"
-  queue 'WORK'
-  time '24h'
-  memory '240 GB'
-
-  input:
-  set ( sampleprefix, file(assemblydir) ) from velvethoutput1
-
-  output:
-  set ( sampleprefix, file("${sampleprefix}_contig.fa") ) into longoutput
-
-  """
-  velvetg $assemblydir -exp_cov 15 -cov_cutoff 0.5 -ins_length 555 -min_contig_lgth 10000
-  mv ${assemblydir}/contigs.fa ${sampleprefix}_contig.fa
-  """
-}
-
-process dovelvetgkb {
-  publishDir "$params.outdir/analysis", mode: "copy"
-  queue 'WORK'
-  time '24h'
-  memory '240 GB'
-
-  input:
-  set ( sampleprefix, file(assemblydir) ) from velvethoutput2
-
-  output:
-  set ( sampleprefix, file("${sampleprefix}_assembled") ) into kboutput
-
-  """
-  velvetg $assemblydir -exp_cov 15 -cov_cutoff 0.5 -ins_length 555 -min_contig_lgth 1000
-  mv ${assemblydir} ${sampleprefix}_assembled
-  """
-}
-
