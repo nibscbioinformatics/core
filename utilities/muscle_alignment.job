@@ -1,0 +1,45 @@
+#!/bin/bash
+#SBATCH -N 1
+#SBATCH -c 1
+#SBATCH --mem=30g
+#SBATCH --job-name muscle-align
+
+input=$1
+output=${input%.fasta}
+
+#################################################
+# JOB STATISTICS
+#################################################
+
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+echo "### START - the job is starting at"
+date
+starttime=`date +"%s"`
+echo
+
+echo "the job is running on the node $SLURM_NODELIST"
+echo "job number $SLURM_JOB_ID"
+echo "STAT:jobName:muscle-align_$SLURM_JOB_ID\.out"
+echo "STAT:exechosts:$SLURM_NODELIST"
+echo "The maximum resident set size is `ulimit -m` (kilobyte)"
+echo "The maximum amount of virtual memory available to the shell is `ulimit -v` (kilobyte)"
+echo
+
+
+echo "alignment is starting"
+
+FOLDER=/usr/share/sequencing/tools
+$FOLDER/muscle3.8.31_i86linux64 -in $input -maxiters 2 -clwout ${output}.aln -fastaout ${output}.aln.fasta -msfout ${output}.msf
+
+
+
+#################################################
+# End
+#################################################
+echo "### END job finished"
+endtime=`date +"%s"`
+duration=$((endtime - starttime))
+echo "STAT:startTime:$starttime"
+echo "STAT:doneTime:$endtime"
+echo "STAT:runtime:$duration"
+echo
