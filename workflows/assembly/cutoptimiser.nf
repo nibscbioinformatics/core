@@ -70,3 +70,23 @@ process dovelvet {
   mv vorun_logfile.txt ${sampleprefix}_velvetlog.txt
   """
 }
+
+process dospades {
+  publishDir "$params.outdir/analysis", mode: "copy"
+  cpus 32
+  queue 'WORK'
+  time '24h'
+  memory '240 GB'
+
+  input:
+  set ( sampleprefix, file(forwardfile), file(reversefile) ) from trimmingoutput2
+
+  output:
+  set ( sampleprefix, file("${sampleprefix}_spades") ) into spadesoutput
+
+  """
+  module load BWA/latest
+  python /home/AD/tbleazar/spades/SPAdes-3.13.1-Linux/bin/spades.py -o ${sampleprefix}_spades -1 $forwardfile -2 $reversefile -t ${params.cpus} -m 240
+  """
+}
+
