@@ -4,7 +4,7 @@
 
 params.filepattern = "/usr/share/sequencing/miseq/output/161007_M01745_0131_000000000-ATN6R/Data/Intensities/BaseCalls/049*{_L001_R1_001,_L001_R2_001}.fastq.gz"
 params.adapterfile = "/home/AD/tbleazar/usrlocalmark/NexteraPE-PE.fa"
-params.outdir = "/home/AD/tbleazar/pipelines/test"
+params.outdir = "/home/AD/tbleazar/test"
 params.referencefolder = "/usr/share/sequencing/projects/049/input/reference/" //and it is required that this have an indexed genome already
 params.referencefile = "AY184219.fasta"
 params.cpus = "32"
@@ -122,10 +122,6 @@ process markduplicates {
   gatk MarkDuplicates -I $sortedbamfile -M ${sampleprefix}.metrics.txt -O ${sampleprefix}.marked.bam
   """
 }
-
-//    fileout.write("lofreq indelqual --dindel -f $reffasta -o "+working+"/aligned/$shortname.readgrouped.deduped.indelqual.bam "+working+"/aligned/$shortname.readgrouped.deduped.bam\n")
-//    fileout.write("samtools index "+working+"/aligned/$shortname.readgrouped.deduped.indelqual.bam\n")
-//    fileout.write("lofreq call -f $reffasta -o "+working+"/analysis/lofreq.$shortname.vcf --call-indels "+working+"/aligned/$shortname.readgrouped.deduped.indelqual.bam\n")
 
 process indelqual {
   publishDir "$params.outdir/alignments", mode: "copy"

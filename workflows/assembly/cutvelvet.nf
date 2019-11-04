@@ -78,11 +78,13 @@ process dovelvetglong {
   set ( sampleprefix, file(assemblydir) ) from velvethoutput1
 
   output:
-  set ( sampleprefix, file("${sampleprefix}_contig.fa") ) into longoutput
+  set ( sampleprefix, file("${sampleprefix}_long/contigs.fa") ) into longoutput
 
   """
-  velvetg $assemblydir -exp_cov 15 -cov_cutoff 0.5 -ins_length 555 -min_contig_lgth 10000
-  mv ${assemblydir}/contigs.fa ${sampleprefix}_contig.fa
+  module load velvetoptimiser/2.2.6
+  mkdir ${sampleprefix}_long
+  cp ${assemblydir}/* ${sampleprefix}_long
+  velvetg ${sampleprefix}_long -exp_cov 15 -cov_cutoff 0.5 -ins_length 555 -min_contig_lgth 5000
   """
 }
 
@@ -99,8 +101,10 @@ process dovelvetgkb {
   set ( sampleprefix, file("${sampleprefix}_assembled") ) into kboutput
 
   """
-  velvetg $assemblydir -exp_cov 15 -cov_cutoff 0.5 -ins_length 555 -min_contig_lgth 1000
-  mv ${assemblydir} ${sampleprefix}_assembled
+  module load velvetoptimiser/2.2.6
+  mkdir ${sampleprefix}_assembled
+  cp ${assemblydir}/* ${sampleprefix}_assembled
+  velvetg ${sampleprefix}_assembled -exp_cov 15 -cov_cutoff 0.5 -ins_length 555 -min_contig_lgth 1000
   """
 }
 
