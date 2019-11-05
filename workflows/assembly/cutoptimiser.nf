@@ -86,7 +86,7 @@ process dospades {
 
   """
   module load BWA/latest
-  python /home/AD/tbleazar/spades/SPAdes-3.13.1-Linux/bin/spades.py -o ${sampleprefix}_spades -1 $forwardfile -2 $reversefile -t ${params.cpus} -m 240
+  python /home/AD/tbleazar/spades/SPAdes-3.13.1-Linux/bin/spades.py -o ${sampleprefix}_spades -1 $forwardfile -2 $reversefile -t ${params.cpus} -m 240 --cov-cutoff 10.0
   """
 }
 
