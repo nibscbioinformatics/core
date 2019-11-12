@@ -163,7 +163,7 @@ process varcall {
 
   """
   module load LoFREQ/latest
-  lofreq call -f ${refs}/${params.referencefile} -o ${sampleprefix}.lofreq.vcf --call-indels $indelqualfile
+  lofreq call -f ${refs}/${params.referencefile} --no-default-filter --min-cov 10 -o ${sampleprefix}.lofreq.vcf --call-indels $indelqualfile
   """
 }
 
