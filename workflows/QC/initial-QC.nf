@@ -8,6 +8,10 @@ params.mergelanes = false
 params.indir = "/usr/share/sequencing/projects/272/raw_data"
 params.qcdir = "/usr/share/sequencing/projects/272/qc-nf"
 
+
+// more comments should be introduced in the code
+// each process should be briefly explained
+
 //merging four lanes only when params.mergelanes = true
 if (params.mergelanes) {
   inputdirectory1 = file(params.indir)
