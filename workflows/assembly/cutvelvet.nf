@@ -1,3 +1,6 @@
+// add license header
+
+
 //This is a nextflow script to trim and then use velveth and velvetg with hardcoded parameters based on an experiment to assemble
 
 params.filepattern = "/usr/share/sequencing/miseq/output/161007_M01745_0131_000000000-ATN6R/Data/Intensities/BaseCalls/049*{_L001_R1_001,_L001_R2_001}.fastq.gz"
@@ -30,6 +33,9 @@ process docutadapt {
   """
 }
 
+
+// please comment each process by explaining briefly the code
+
 process dotrimlog {
   publishDir "$params.outdir/analysis", mode: "copy"
   cpus 1
@@ -49,6 +55,8 @@ process dotrimlog {
   python /home/AD/tbleazar/pipelines/trimlogger.py logdir read-summary.csv
   """
 }
+
+// the above is hard coded -> remember to change this with a system/wide location
 
 process dovelveth {
   cpus 32
