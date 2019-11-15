@@ -1,3 +1,6 @@
+// add license header
+
+
 //This is a nextflow script to collect all read files from a directory then merge if needed, and do qc
 //when running, use when to control merging dependent on nextseq or miseq parameter
 
