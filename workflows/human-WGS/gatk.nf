@@ -29,6 +29,14 @@ params.genomefasta = "hg19_v0_Homo_sapiens_assembly19.fasta"
 params.normpanel = "somatic-b37_Mutect2-WGS-panel-b37.vcf"
 params.gnomad = "somatic-b37_af-only-gnomad.raw.sites.vcf"
 
+// we should add
+// params.interval_list = null
+// to introduce exome / panels as well as scatter-gather functionality
+// the -L option should be added to all GATK steps that support it
+// and intervals creation when running WGS should be introduced according to examples
+// by https://github.com/IARCbioinfo/gatk4-HaplotypeCaller-nf/blob/master/gatk4-HaplotypeCaller.nf
+// see process SplitIntervals 
+
 Channel
   .fromFilePairs(params.filepattern)
   .set { readpairs }
