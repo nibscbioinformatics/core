@@ -264,6 +264,14 @@ process snpindelsplit {
   """
 }
 
+
+
+// ideally we should have a conditional here
+// based on the number of samples, i.e. if the total samples are 
+// less than 30, then we run hard filters
+// if the total samples are equal or more to 30 we run VQSR instead
+
+
 process hardfilter {
   cpus 8
   queue 'WORK'
