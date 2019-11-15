@@ -36,6 +36,11 @@ Channel
 references = Channel
   .fromPath(params.referencefolder)
 
+
+// this way of assigning the references seem very different from how
+// other pipelines have coded this
+// can we maybe simplify this part and use the same approach as others?
+
 references.into {
   ref1
   ref2
