@@ -96,6 +96,8 @@ process markduplicates {
   queue 'WORK'
   time '8h'
   memory '40 GB'
+  // this will have to be optimised and possibly be different
+  // if we run either WGS/WES or panel workflows
 
   input:
   set ( sampleprefix, file(sortedbamfile) ) from sortedbam
@@ -107,6 +109,10 @@ process markduplicates {
   module load GATK/4.1.3.0
   gatk MarkDuplicates -I $sortedbamfile -M ${sampleprefix}.metrics.txt -O ${sampleprefix}.marked.bam
   """
+  // in all JAVA processes (this one and later) I would always add a -Xmx (and ideally -Xms) heap size
+  // within the limits of the requested memory
+  // depending on the performance I would also add -XX:ParallelGCThreads=1 to make sure garbage collection doesn't use
+  // too many resources
 }
 
 process baserecalibrationtable {
