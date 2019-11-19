@@ -1,0 +1,44 @@
+---
+title: "Reporting Workflow"
+author: "Francesco Lescai"
+date: "18/11/2019"
+output:
+  html_document:
+    theme: readable
+    highlight: tango
+    toc: true
+    toc_float: true
+    css: ~/CODE/core/reports_templates/nibsc_report.css
+editor_options:
+  chunk_output_type: console
+---
+
+
+```{r, echo=FALSE, message=FALSE, error=FALSE, warning=FALSE}
+library(knitr)
+opts_chunk$set(message=FALSE, error=FALSE, warning=FALSE, tidy=TRUE, tidy.opts=list(blank=FALSE), cache=TRUE, cache.lazy = FALSE, echo = FALSE,  results = 'asis', fig.pos='H', fig.wide=TRUE)
+```
+
+
+```{r libraries}
+library(DiagrammeR)
+library(tidyverse)
+library(reshape2)
+library(pander)
+library(grid)
+library(VennDiagram)
+library(DESeq2)
+library(ImpulseDE2)
+library(splines)
+library(pheatmap)
+library(TCseq)
+library(biomaRt)
+library(org.Hs.eg.db)
+library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+library(pander)
+library(eulerr)
+library(qvalue)
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(DOSE)
+```
