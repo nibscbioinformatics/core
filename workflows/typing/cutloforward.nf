@@ -83,25 +83,6 @@ process sorttobam {
   """
 }
 
-process markduplicates {
-  publishDir "$params.outdir/alignments", mode: "copy"
-  cpus 1
-  queue 'WORK'
-  time '12h'
-  memory '24 GB'
-
-  input:
-  set ( sampleprefix, file(sortedbamfile) ) from sortedbam
-
-  output:
-  set ( sampleprefix, file("${sampleprefix}.marked.bam") ) into markedbam
-
-  """
-  module load GATK/4.1.3.0
-  gatk MarkDuplicates -I $sortedbamfile -M ${sampleprefix}.metrics.txt -O ${sampleprefix}.marked.bam
-  """
-}
-
 process indelqual {
   publishDir "$params.outdir/alignments", mode: "copy"
   cpus 1
@@ -110,7 +91,7 @@ process indelqual {
   memory '24 GB'
 
   input:
-  set ( sampleprefix, file(markedbamfile) ) from markedbam
+  set ( sampleprefix, file(markedbamfile) ) from sortedbam
   file refs from ref3.first()
 
   output:
@@ -188,7 +169,3 @@ process dodepth {
   samtools depth -aa $indelqualfile > ${sampleprefix}.samtools.depth
   """
 }
-
-
-
-
