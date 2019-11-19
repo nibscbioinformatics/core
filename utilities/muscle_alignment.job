@@ -27,6 +27,8 @@ echo
 
 
 echo "alignment is starting"
+### standard outputs for several different formats
+### maxiters as suggested by developers when number of reads is very high
 
 FOLDER=/usr/share/sequencing/tools
 $FOLDER/muscle3.8.31_i86linux64 -in $input -maxiters 2 -clwout ${output}.aln -fastaout ${output}.aln.fasta -msfout ${output}.msf
