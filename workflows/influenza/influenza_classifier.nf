@@ -71,10 +71,10 @@ process createBlastDatabase {
   file dbFasta from database_fasta_ch
 
   output:
-  file dbBlast into blast_database_ch
+  file "${dbFasta.baseName}" into blast_database_ch
 
   """
-  makeblastdb -in $dbFasta -out $dbBlast -parse_seqids -dbtype nucl
+  makeblastdb -in $dbFasta -out ${dbFasta.baseName} -parse_seqids -dbtype nucl
   """
 
 }
