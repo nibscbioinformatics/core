@@ -64,7 +64,7 @@ process createBlastDatabase {
   // this way, the pipeline remains portable on any platform by any
   // user, as long as you have cloned our main repository in this way
 
-  conda '~/CODE/core/workflows/influenza/influenza_env.yml'
+  conda '~/CODE/core/workflows/influenza/influenza_conda.yml'
   publishDir "/usr/share/sequence/references/influenzaDBs"
 
   input:
@@ -88,7 +88,7 @@ process blastSearch {
   // this way, the pipeline remains portable on any platform by any
   // user, as long as you have cloned our main repository in this way
 
-  conda '~/CODE/core/workflows/influenza/influenza_env.yml'
+  conda '~/CODE/core/workflows/influenza/influenza_conda.yml'
   publishDir "$params.output_dir/$sampleId"
 
   input:
