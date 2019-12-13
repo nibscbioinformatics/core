@@ -54,6 +54,20 @@ Channel
     .fromFilePairs('params.output_dir/*_{R1,R2}*.fq.gz')
     .set { samples_ch }
 
+database_fasta_ch = Channel.fromPath(params.origin)
+
+
+process createBlastDatabase {
+  conda 'xxxxxxxxx/influenza_env.yml'
+  publishDir "/usr/share/sequence/references/influenzaDBs"
+
+  input:
+  file dbFasta from database_fasta_ch
+
+  output:
+  file 
+
+}
 
 
 process blastSearch {
@@ -68,6 +82,14 @@ process blastSearch {
 
   """
   zcat $reads | seqkit fq2fa -o ${sampleId}.fa
+
+  blastn \
+  -query ${sampleId}.fa \
+  -db /usr/share/sequencing/projects/296/analysis/blast_test_20191212/localDB \
+  -max_target_seqs 1 \
+  -num_threads 24 \
+  -outfmt '6 qseqid sseqid sgi qstart qend sstart send pident mismatch nident evalue' \
+  | sort -k 1,1 -k11,11g > "${sampleId}_blast_results.txt"
 
   """
 
