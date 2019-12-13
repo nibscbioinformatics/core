@@ -58,24 +58,42 @@ database_fasta_ch = Channel.fromPath(params.origin)
 
 
 process createBlastDatabase {
-  conda 'xxxxxxxxx/influenza_env.yml'
+  // note:
+  // the line below presumes you have cloned our github repository
+  // under your home directory, in a folder called CODE
+  // this way, the pipeline remains portable on any platform by any
+  // user, as long as you have cloned our main repository in this way
+
+  conda '~/CODE/core/workflows/influenza/influenza_env.yml'
   publishDir "/usr/share/sequence/references/influenzaDBs"
 
   input:
   file dbFasta from database_fasta_ch
 
   output:
-  file 
+  file dbBlast into blast_database_ch
+
+  """
+  makeblastdb -in $dbFasta -out $dbBlast -parse_seqids -dbtype nucl
+  """
 
 }
 
 
 process blastSearch {
-  conda 'xxxxxxxxx/influenza_env.yml'
+
+  // note:
+  // the line below presumes you have cloned our github repository
+  // under your home directory, in a folder called CODE
+  // this way, the pipeline remains portable on any platform by any
+  // user, as long as you have cloned our main repository in this way
+
+  conda '~/CODE/core/workflows/influenza/influenza_env.yml'
   publishDir "$params.output_dir/$sampleId"
 
   input:
   set sampleId, file(reads) from samples_ch
+  file dbBlastFile from blast_database_ch
 
   output:
   file("${sampleId}_blast_results.txt") into blast_results
@@ -85,7 +103,7 @@ process blastSearch {
 
   blastn \
   -query ${sampleId}.fa \
-  -db /usr/share/sequencing/projects/296/analysis/blast_test_20191212/localDB \
+  -db $dbBlastFile \
   -max_target_seqs 1 \
   -num_threads 24 \
   -outfmt '6 qseqid sseqid sgi qstart qend sstart send pident mismatch nident evalue' \
