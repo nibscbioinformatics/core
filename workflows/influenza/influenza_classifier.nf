@@ -71,7 +71,7 @@ process createBlastDatabase {
   file dbFasta from database_fasta_ch
 
   output:
-  file "${dbFasta.baseName}" into blast_database_ch
+  file "${dbFasta.baseName}.*" into blast_database_ch
 
   """
   makeblastdb -in $dbFasta -out ${dbFasta.baseName} -parse_seqids -dbtype nucl
@@ -93,7 +93,7 @@ process blastSearch {
 
   input:
   set sampleId, file(reads) from samples_ch
-  file dbBlastFile from blast_database_ch
+  file dbBlastPrefix from blast_database_ch
 
   output:
   file("${sampleId}_blast_results.txt") into blast_results
@@ -103,7 +103,7 @@ process blastSearch {
 
   blastn \
   -query ${sampleId}.fa \
-  -db $dbBlastFile \
+  -db $dbBlastPrefix \
   -max_target_seqs 1 \
   -num_threads 24 \
   -outfmt '6 qseqid sseqid sgi qstart qend sstart send pident mismatch nident evalue' \
