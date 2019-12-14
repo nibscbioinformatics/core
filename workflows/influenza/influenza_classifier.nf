@@ -68,7 +68,7 @@ database_fasta_ch = Channel.fromPath(params.origin)
 
 process createBlastDatabase {
 
-  tag "$database_fasta_ch.baseName"
+  tag "${dbFasta.baseName}"
   // note:
   // the line below presumes you have cloned our github repository
   // under your home directory, in a folder called CODE
