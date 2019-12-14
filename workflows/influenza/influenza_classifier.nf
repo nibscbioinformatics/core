@@ -60,7 +60,7 @@ params.output_dir     = "."
 params.origin         = null
 
 Channel
-    .fromFilePairs("$params.output_dir/*_{R1,R2}*.fq.gz")
+    .fromFilePairs("$params.reads/*_{R1,R2}*.fq.gz")
     .ifEmpty { error "Cannot find any reads matching ${params.reads}"}
     .set { samples_ch }
 
