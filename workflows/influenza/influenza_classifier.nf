@@ -65,7 +65,7 @@ process createBlastDatabase {
   // user, as long as you have cloned our main repository in this way
 
   conda "$HOME/CODE/core/workflows/influenza/influenza_conda.yml"
-  publishDir "/usr/share/sequence/references/influenzaDBs"
+  publishDir "/usr/share/sequencing/references/influenzaDBs"
 
   input:
   file dbFasta from database_fasta_ch
