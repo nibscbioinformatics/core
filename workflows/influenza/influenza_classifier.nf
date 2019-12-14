@@ -28,6 +28,15 @@ log.info "This is free software, and you are welcome to redistribute it"
 log.info "under certain conditions; see LICENSE for details."
 log.info "-------------------------------------------------------------------------"
 log.info ""
+log.info """\
+
+        PARAMETERS RECEIVED:
+        --------------------------------
+        READS FOLDER: ${params.reads}
+        DATABASE FASTA FILE: ${params.origin}
+        DESTINATION FOLDER: ${params.output_dir}
+        """
+        .stripIndent()
 
 if (params.help)
 {
@@ -58,6 +67,8 @@ database_fasta_ch = Channel.fromPath(params.origin)
 
 
 process createBlastDatabase {
+
+  tag "$database_fasta_ch.baseName"
   // note:
   // the line below presumes you have cloned our github repository
   // under your home directory, in a folder called CODE
@@ -65,7 +76,7 @@ process createBlastDatabase {
   // user, as long as you have cloned our main repository in this way
 
   conda "$HOME/CODE/core/workflows/influenza/influenza_conda.yml"
-  publishDir "/usr/share/sequencing/references/influenzaDBs"
+  publishDir "/usr/share/sequencing/references/influenzaDBs", mode: 'copy'
 
   input:
   file dbFasta from database_fasta_ch
@@ -82,6 +93,7 @@ process createBlastDatabase {
 
 process blastSearch {
 
+  tag "$sampleId"
   // note:
   // the line below presumes you have cloned our github repository
   // under your home directory, in a folder called CODE
@@ -89,7 +101,7 @@ process blastSearch {
   // user, as long as you have cloned our main repository in this way
 
   conda "$HOME/CODE/core/workflows/influenza/influenza_conda.yml"
-  publishDir "$params.output_dir/$sampleId"
+  publishDir "${params.output_dir}/${sampleId}", mode: 'copy'
 
   input:
   set sampleId, file(reads) from samples_ch
