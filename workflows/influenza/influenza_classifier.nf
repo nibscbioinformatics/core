@@ -82,24 +82,57 @@ process createBlastDatabase {
   // user, as long as you have cloned our main repository in this way
 
   conda "$HOME/CODE/core/workflows/influenza/influenza_conda.yml"
-  publishDir "/usr/share/sequencing/references/influenzaDBs", mode: 'copy'
+  storeDir "/usr/share/sequencing/references/influenzaDBs"
 
   input:
   file dbFasta from database_fasta_ch
 
   output:
-  file "${dbFasta.baseName}.*" into blast_database_ch
+  file "${dbName}.*" into blast_database_ch
 
+  script:
+  dbName = dbFasta.baseName
   """
-  makeblastdb -in $dbFasta -out ${dbFasta.baseName} -parse_seqids -dbtype nucl
+  makeblastdb -in $dbFasta -out ${dbName} -parse_seqids -dbtype nucl
   """
 
 }
 
 
+process collateReads {
+
+  tag "collating reads for $sampleId"
+  cpus 1
+  queue 'WORK'
+  time '1h'
+  memory '3 GB'
+
+  // note:
+  // the line below presumes you have cloned our github repository
+  // under your home directory, in a folder called CODE
+  // this way, the pipeline remains portable on any platform by any
+  // user, as long as you have cloned our main repository in this way
+
+  conda "$HOME/CODE/core/workflows/influenza/influenza_conda.yml"
+  publishDir "${params.output_dir}/${sampleId}", mode: 'copy'
+
+  input:
+  set sampleId, file(reads) from samples_ch
+
+  output:
+  file("${sampleId}.fa") into sequences_ch
+
+  """
+  zcat $reads | seqkit fq2fa -o ${sampleId}.fa
+  """
+
+}
+
+
+
 process blastSearch {
 
-  tag "processing sample $sampleId"
+  tag "running blastn on sample $sampleId"
   cpus 24
   queue 'WORK'
   time '1h'
@@ -115,19 +148,19 @@ process blastSearch {
   publishDir "${params.output_dir}/${sampleId}", mode: 'copy'
 
   input:
-  set sampleId, file(reads) from samples_ch
-  file dbBlastPrefix from blast_database_ch
+  set sampleId, file(sampleReads) from sequences_ch
+  file dbBlastFiles from blast_database_ch
 
   output:
-  file("${sampleId}.fa") into sequences_ch
   file("${sampleId}_blast_results.txt") into blast_results_ch
 
+  script:
+  dbName = dbBlastFiles.collect().first().baseName
+  dbLoc = "/usr/share/sequencing/references/influenzaDBs/${dbName}"
   """
-  zcat $reads | seqkit fq2fa -o ${sampleId}.fa
-
   blastn \
-  -query ${sampleId}.fa \
-  -db $dbBlastPrefix \
+  -query ${sampleReads} \
+  -db $dbLoc \
   -max_target_seqs 1 \
   -num_threads 24 \
   -outfmt '6 qseqid sseqid sgi qstart qend sstart send pident mismatch nident evalue' \
