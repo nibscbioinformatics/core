@@ -81,7 +81,10 @@ process createBlastDatabase {
   // this way, the pipeline remains portable on any platform by any
   // user, as long as you have cloned our main repository in this way
 
-  conda "$HOME/CODE/core/workflows/influenza/influenza_conda.yml"
+  // since now (reasons unknown) I get an error in the activate line
+  // referring to conda, I try to link my own existing env
+
+  conda "$HOME/.conda/envs/influenza"
   publishDir "/usr/share/sequencing/references/influenzaDBs", mode: 'copy'
 
   input:
@@ -114,7 +117,10 @@ process blastSearch {
   // this way, the pipeline remains portable on any platform by any
   // user, as long as you have cloned our main repository in this way
 
-  conda "$HOME/CODE/core/workflows/influenza/influenza_conda.yml"
+  // since now (reasons unknown) I get an error in the activate line
+  // referring to conda, I try to link my own existing env
+
+  conda "$HOME/.conda/envs/influenza"
   publishDir "${params.output_dir}/${sampleId}", mode: 'copy'
 
   input:
@@ -142,12 +148,6 @@ process blastSearch {
   """
 
 }
-
-
-
-
-
-
 
 
 workflow.onComplete {
