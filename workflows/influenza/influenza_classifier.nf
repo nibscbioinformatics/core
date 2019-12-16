@@ -133,7 +133,7 @@ process blastSearch {
 
   blastn \
   -query ${sampleId}.fa \
-  -db $dbBlastPrefix \
+  -db $dbLoc \
   -max_target_seqs 1 \
   -num_threads 24 \
   -outfmt '6 qseqid sseqid sgi qstart qend sstart send pident mismatch nident evalue' \
