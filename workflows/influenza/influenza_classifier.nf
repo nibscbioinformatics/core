@@ -84,7 +84,7 @@ process createBlastDatabase {
   // since now (reasons unknown) I get an error in the activate line
   // referring to conda, I try to link my own existing env
 
-  conda "$HOME/.conda/envs/influenza"
+  //conda "$HOME/.conda/envs/influenza"
   publishDir "/usr/share/sequencing/references/influenzaDBs", mode: 'copy'
 
   input:
@@ -96,6 +96,7 @@ process createBlastDatabase {
   script:
   dbName = dbFasta.baseName
   """
+  conda activate influenza
   makeblastdb -in $dbFasta -out ${dbName} -parse_seqids -dbtype nucl
   """
 
@@ -120,7 +121,7 @@ process blastSearch {
   // since now (reasons unknown) I get an error in the activate line
   // referring to conda, I try to link my own existing env
 
-  conda "$HOME/.conda/envs/influenza"
+  //conda "$HOME/.conda/envs/influenza"
   publishDir "${params.output_dir}/${sampleId}", mode: 'copy'
 
   input:
@@ -135,6 +136,7 @@ process blastSearch {
   dbName = dbBlastFiles.collect().first().baseName
   dbLoc = "/usr/share/sequencing/references/influenzaDBs/${dbName}"
   """
+  conda activate influenza
   zcat $reads | seqkit fq2fa -o ${sampleId}.fa
 
   blastn \
