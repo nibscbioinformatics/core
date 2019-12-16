@@ -62,7 +62,7 @@ params.origin         = null
 Channel
     .fromFilePairs("$params.reads/*_{R1,R2}*.fastq.gz")
     .ifEmpty { error "Cannot find any reads matching ${params.reads}"}
-    .set { samples_ch }
+    .into { samples_ch }
 
 database_fasta_ch = Channel.fromPath(params.origin)
 
@@ -109,7 +109,10 @@ process blastSearch {
   file dbBlastPrefix from blast_database_ch
 
   output:
-  file("${sampleId}_blast_results.txt") into blast_results
+  file("${sampleId}.fa") into sequences_ch
+  file("${sampleId}_blast_results.txt") into blast_results_ch
+
+  log.info "processing now ${sampleId}"
 
   """
   zcat $reads | seqkit fq2fa -o ${sampleId}.fa
