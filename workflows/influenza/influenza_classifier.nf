@@ -70,6 +70,11 @@ database_fasta_ch = Channel.fromPath(params.origin)
 process createBlastDatabase {
 
   tag "${dbFasta.baseName}"
+  cpus 1
+  queue 'WORK'
+  time '1h'
+  memory '12 GB'
+
   // note:
   // the line below presumes you have cloned our github repository
   // under your home directory, in a folder called CODE
@@ -95,6 +100,11 @@ process createBlastDatabase {
 process blastSearch {
 
   tag "processing sample $sampleId"
+  cpus 24
+  queue 'WORK'
+  time '1h'
+  memory '12 GB'
+
   // note:
   // the line below presumes you have cloned our github repository
   // under your home directory, in a folder called CODE
