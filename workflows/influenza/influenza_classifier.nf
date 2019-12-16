@@ -94,7 +94,7 @@ process createBlastDatabase {
 
 process blastSearch {
 
-  tag "$sampleId"
+  tag "processing sample $sampleId"
   // note:
   // the line below presumes you have cloned our github repository
   // under your home directory, in a folder called CODE
@@ -111,8 +111,6 @@ process blastSearch {
   output:
   file("${sampleId}.fa") into sequences_ch
   file("${sampleId}_blast_results.txt") into blast_results_ch
-
-  log.info "processing now ${sampleId}"
 
   """
   zcat $reads | seqkit fq2fa -o ${sampleId}.fa
