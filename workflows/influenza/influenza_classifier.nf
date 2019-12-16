@@ -96,6 +96,7 @@ process createBlastDatabase {
   script:
   dbName = dbFasta.baseName
   """
+  conda init bash
   conda activate influenza
   makeblastdb -in $dbFasta -out ${dbName} -parse_seqids -dbtype nucl
   """
@@ -136,6 +137,7 @@ process blastSearch {
   dbName = dbBlastFiles.collect().first().baseName
   dbLoc = "/usr/share/sequencing/references/influenzaDBs/${dbName}"
   """
+  conda init bash
   conda activate influenza
   zcat $reads | seqkit fq2fa -o ${sampleId}.fa
 
