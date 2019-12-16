@@ -62,7 +62,7 @@ params.origin         = null
 Channel
     .fromFilePairs("$params.reads/*_{R1,R2}*.fastq.gz")
     .ifEmpty { error "Cannot find any reads matching ${params.reads}"}
-    .into { samples_ch }
+    .set { samples_ch }
 
 database_fasta_ch = Channel.fromPath(params.origin)
 
@@ -82,7 +82,7 @@ process createBlastDatabase {
   // user, as long as you have cloned our main repository in this way
 
   conda "$HOME/CODE/core/workflows/influenza/influenza_conda.yml"
-  storeDir "/usr/share/sequencing/references/influenzaDBs"
+  publishDir "/usr/share/sequencing/references/influenzaDBs", mode: 'copy'
 
   input:
   file dbFasta from database_fasta_ch
