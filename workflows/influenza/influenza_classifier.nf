@@ -81,7 +81,7 @@ process createBlastDatabase {
   // this way, the pipeline remains portable on any platform by any
   // user, as long as you have cloned our main repository in this way
 
-  conda "$HOME/CODE/core/workflows/influenza/influenza_conda.yml"
+  //conda "$HOME/CODE/core/workflows/influenza/influenza_conda.yml"
   storeDir "/usr/share/sequencing/references/influenzaDBs"
 
   input:
@@ -93,7 +93,7 @@ process createBlastDatabase {
   script:
   dbName = dbFasta.baseName
   """
-  makeblastdb -in $dbFasta -out ${dbName} -parse_seqids -dbtype nucl
+  /home/AD/flescai/.conda/envs/influenza/bin/makeblastdb -in $dbFasta -out ${dbName} -parse_seqids -dbtype nucl
   """
 
 
@@ -114,7 +114,7 @@ process blastSearch {
   // this way, the pipeline remains portable on any platform by any
   // user, as long as you have cloned our main repository in this way
 
-  conda "$HOME/CODE/core/workflows/influenza/influenza_conda.yml"
+  //conda "$HOME/CODE/core/workflows/influenza/influenza_conda.yml"
   publishDir "${params.output_dir}/${sampleId}", mode: 'copy'
 
   input:
@@ -131,7 +131,7 @@ process blastSearch {
   """
   zcat $reads | seqkit fq2fa -o ${sampleId}.fa
 
-  blastn \
+  /home/AD/flescai/.conda/envs/influenza/bin/blastn \
   -query ${sampleId}.fa \
   -db $dbLoc \
   -max_target_seqs 1 \
