@@ -135,7 +135,7 @@ process blastSearch {
   dbName = dbBlastFiles.collect().first().baseName
   dbLoc = "/usr/share/sequencing/references/influenzaDBs/${dbName}"
   """
-  zcat $reads | seqkit fq2fa -o ${sampleId}.fa
+  zcat $reads | /home/AD/flescai/.conda/envs/influenza/bin/seqkit fq2fa -o ${sampleId}.fa
 
   /home/AD/flescai/.conda/envs/influenza/bin/blastn \
   -query ${sampleId}.fa \
