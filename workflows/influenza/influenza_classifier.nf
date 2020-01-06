@@ -49,6 +49,7 @@ if (params.help)
     log.info "Mandatory arguments:"
     log.info "--reads                         READS FOLDER              Folder with sample reads"
     log.info "--origin                        PARENTS FASTA FILE        Fasta file with sequences of viral parents"
+    log.ingo "--db                            DB NAME                   Name of Blast DB to be created"
     log.info "--output_dir                    OUTPUT FOLDER             Output for classification results"
     exit 1
 }
@@ -58,6 +59,7 @@ if (params.help)
 params.reads          = null
 params.output_dir     = "."
 params.origin         = null
+params.db             = null
 
 Channel
     .fromFilePairs("$params.reads/*_{R1,R2}*.fastq.gz")
@@ -65,7 +67,7 @@ Channel
     .set { samples_ch }
 
 database_fasta_ch = Channel.fromPath(params.origin)
-
+dbName = params.origin
 
 process createBlastDatabase {
 
@@ -94,9 +96,8 @@ process createBlastDatabase {
   file "${dbName}.*" into blast_database_ch
 
   script:
-  dbName = dbFasta.baseName
   """
-  /home/AD/flescai/.conda/envs/influenza/bin/makeblastdb -in $dbFasta -out ${dbName} -parse_seqids -dbtype nucl
+  /usr/share/sequencing/tools/ncbi-blast-2.9.0+-src/c++/ReleaseMT/bin/makeblastdb -in $dbFasta -out ${dbName} -parse_seqids -dbtype nucl
   """
 
 
@@ -132,14 +133,12 @@ process blastSearch {
   file("${sampleId}_blast_results.txt") into blast_results_ch
 
   script:
-  dbName = dbBlastFiles.collect().first().baseName
-  dbLoc = "/usr/share/sequencing/references/influenzaDBs/${dbName}"
   """
   zcat $reads | /home/AD/flescai/.conda/envs/influenza/bin/seqkit fq2fa -o ${sampleId}.fa
 
-  /home/AD/flescai/.conda/envs/influenza/bin/blastn \
+  /usr/share/sequencing/tools/ncbi-blast-2.9.0+-src/c++/ReleaseMT/bin/blastn \
   -query ${sampleId}.fa \
-  -db $dbLoc \
+  -db ${dbName} \
   -max_target_seqs 1 \
   -num_threads 24 \
   -outfmt '6 qseqid sseqid sgi qstart qend sstart send pident mismatch nident evalue' \
