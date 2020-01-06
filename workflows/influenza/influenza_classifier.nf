@@ -67,7 +67,7 @@ Channel
     .set { samples_ch }
 
 database_fasta_ch = Channel.fromPath(params.origin)
-dbName = params.origin
+dbName = params.db
 
 process createBlastDatabase {
 
