@@ -150,6 +150,34 @@ process blastSearch {
 }
 
 
+process Reporting {
+  tag "markdown the report"
+  cpus 1
+  queue 'WORK'
+  time '1h'
+  memory '3 GB'
+
+  publishDir "${params.output_dir}", mode: 'copy'
+
+  input:
+  file blastResults from blast_results_ch
+
+  output:
+  file("${dbName}_report.html") into final_report_ch
+
+  script:
+  """
+  module avail R/3.6.0
+
+
+
+  """
+
+
+
+}
+
+
 workflow.onComplete {
 	log.info ( workflow.success ? "\nDone! Workflow completed\n" : "Oops .. something went wrong\n" )
 }

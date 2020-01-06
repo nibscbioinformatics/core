@@ -1,0 +1,46 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+
+
+```{r, include=FALSE}
+res <- read_tsv(results, col_names=FALSE)
+names(res) <- c("qseqid", "sseqid", "sgi", "qstart", "qend", "sstart", "send", "pident", "mismatch", "nident", "evalue")
+
+table <- res %>%
+filter(pident == 100) %>%
+mutate(gene = sub("^(.*)-.*$", "\\1", sseqid),
+            strain = sub("^.*-(.*)$", "\\1", sseqid)
+) %>%
+group_by(gene, strain) %>%
+summarise( abs = n()) %>%
+mutate(freq = (abs / sum(abs)) * 100)
+
+title <- gsub("_blast_results.txt", "", results)
+
+```
+
+
+
+
+## Abundance table for `r title`
+
+
+```{r, results='asis', echo=FALSE}
+library(pander)
+pander(table)
+```
+
+
+## Abundance plot for `r title`
+
+```{r, echo=FALSE}
+table %>%
+  mutate(frequency = ifelse(strain==unique(strain)[1], freq, freq * -1)) %>%
+  ggplot(aes(y=frequency, x=gene, fill=strain))+
+  geom_bar(stat = "identity")
+```
+
