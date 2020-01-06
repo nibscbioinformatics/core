@@ -169,7 +169,10 @@ process Reporting {
   """
   module avail R/3.6.0
 
-
+  Rscript $HOME/CODE/core/workflows/influenza/report_run_influenza-report.R \
+  $HOME/CODE/core/workflows/influenza/report_influenza_main.Rmd \
+  "${dbName}_report.html" \
+  $blastResults
 
   """
 
