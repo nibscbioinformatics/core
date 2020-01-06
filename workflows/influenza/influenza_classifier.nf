@@ -34,6 +34,7 @@ log.info """\
         --------------------------------
         READS FOLDER: ${params.reads}
         DATABASE FASTA FILE: ${params.origin}
+        BLAST DATABASE NAME: ${params.db}
         DESTINATION FOLDER: ${params.output_dir}
         """
         .stripIndent()
@@ -126,7 +127,7 @@ process blastSearch {
 
   input:
   set sampleId, file(reads) from samples_ch
-  file dbBlastFiles from blast_database_ch
+  file dbBlastFiles from blast_database_ch.collect()
 
   output:
   file("${sampleId}.fa") into sequences_ch
