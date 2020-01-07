@@ -157,10 +157,8 @@ process Reporting {
   time '1h'
   memory '3 GB'
 
-  // replaced module load R/3.6.0
-  // in script statement with the following
-  // conda environment - provided it works
-  conda "$HOME/CODE/core/workflows/influenza/influenza_conda.yml"
+  //conda "$HOME/CODE/core/workflows/influenza/influenza_conda.yml"
+  // keeps not working even with latest github code
 
   publishDir "${params.output_dir}", mode: 'copy'
 
@@ -172,6 +170,8 @@ process Reporting {
 
   script:
   """
+  module load R/3.6.0
+  
   Rscript $HOME/CODE/core/workflows/influenza/report_run_influenza-report.R \
   $HOME/CODE/core/workflows/influenza/report_influenza_main.Rmd \
   "${dbName}_report.html" \
