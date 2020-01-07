@@ -141,7 +141,7 @@ process blastSearch {
   -query ${sampleId}.fa \
   -db ${dbName} \
   -max_target_seqs 1 \
-  -num_threads 24 \
+  -num_threads ${task.cpus} \
   -outfmt '6 qseqid sseqid sgi qstart qend sstart send pident mismatch nident evalue' \
   | sort -k 1,1 -k11,11g > "${sampleId}_blast_results.txt"
 
