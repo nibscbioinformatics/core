@@ -63,6 +63,7 @@ dependencies:
   - make=4.2.1=h14c3975_2004
   - ncurses=6.1=hf484d3e_1002
   - openssl=1.1.1d=h516909a_0
+  - pandoc=2.9.1.1=0
   - pango=1.42.4=ha030887_1
   - pcre=8.43=he1b5a44_0
   - perl=5.26.2=h516909a_1006
