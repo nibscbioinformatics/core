@@ -8,6 +8,7 @@ editor_options:
 
 ```{r, include=FALSE}
 res <- read_tsv(results, col_names=FALSE)
+  title <- gsub("_blast_results.txt", "", results)
 
 if(dim(res)[1]==0){
   checkPos <- FALSE
@@ -25,8 +26,6 @@ if(dim(res)[1]==0){
     group_by(gene, strain) %>%
     summarise( abs = n()) %>%
     mutate(freq = (abs / sum(abs)) * 100)
-
-  title <- gsub("_blast_results.txt", "", results)
 }
 
 
@@ -38,7 +37,7 @@ if(dim(res)[1]==0){
 
 ## Abundance table for `r title`
 
-```{r, eval=checkNeg, results='asis'}
+```{r, eval=checkNeg, results='asis', echo=FALSE}
 cat('Results for this sample are negative, i.e. no reads have been matched to any sequence in the database.\n')
 ```
 
@@ -52,7 +51,7 @@ pander(table)
 ## Abundance plot for `r title`
 
 
-```{r, eval=checkNeg, results='asis'}
+```{r, eval=checkNeg, results='asis', echo=FALSE}
 cat('Results for this sample are negative, i.e. no reads have been matched to any sequence in the database.\n')
 ```
 
