@@ -160,8 +160,7 @@ process Reporting {
   // replaced module load R/3.6.0
   // in script statement with the following
   // conda environment - provided it works
-  // conda "$HOME/CODE/core/workflows/influenza/influenza_conda.yml"
-  // this is still not working even on latest github compiled code
+  conda "$HOME/CODE/core/workflows/influenza/influenza_conda.yml"
 
   publishDir "${params.output_dir}", mode: 'copy'
 
@@ -173,9 +172,6 @@ process Reporting {
 
   script:
   """
-  conda init bash
-  conda activate /home/AD/flescai/.conda/envs/influenza
-
   Rscript $HOME/CODE/core/workflows/influenza/report_run_influenza-report.R \
   $HOME/CODE/core/workflows/influenza/report_influenza_main.Rmd \
   "${dbName}_report.html" \
