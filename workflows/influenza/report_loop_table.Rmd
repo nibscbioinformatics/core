@@ -8,18 +8,28 @@ editor_options:
 
 ```{r, include=FALSE}
 res <- read_tsv(results, col_names=FALSE)
-names(res) <- c("qseqid", "sseqid", "sgi", "qstart", "qend", "sstart", "send", "pident", "mismatch", "nident", "evalue")
 
-table <- res %>%
-filter(pident == 100) %>%
-mutate(gene = sub("^(.*)-.*$", "\\1", sseqid),
+if(dim(res)[1]==0){
+  checkPos <- FALSE
+  checkNeg <- TRUE
+} else {
+  checkPos <- TRUE
+  checkNeg <- FALSE
+  names(res) <- c("qseqid", "sseqid", "sgi", "qstart", "qend", "sstart", "send", "pident", "mismatch", "nident", "evalue")
+
+  table <- res %>%
+    filter(pident == 100) %>%
+    mutate(gene = sub("^(.*)-.*$", "\\1", sseqid),
             strain = sub("^.*-(.*)$", "\\1", sseqid)
-) %>%
-group_by(gene, strain) %>%
-summarise( abs = n()) %>%
-mutate(freq = (abs / sum(abs)) * 100)
+          ) %>%
+    group_by(gene, strain) %>%
+    summarise( abs = n()) %>%
+    mutate(freq = (abs / sum(abs)) * 100)
 
-title <- gsub("_blast_results.txt", "", results)
+  title <- gsub("_blast_results.txt", "", results)
+}
+
+
 
 ```
 
@@ -28,8 +38,12 @@ title <- gsub("_blast_results.txt", "", results)
 
 ## Abundance table for `r title`
 
+```{r, eval=checkNeg, results='asis'}
+cat('Results for this sample are negative, i.e. no reads have been matched to any sequence in the database.\n')
+```
 
-```{r, results='asis', echo=FALSE}
+
+```{r, results='asis', echo=FALSE, eval=checkPos}
 library(pander)
 pander(table)
 ```
@@ -37,7 +51,13 @@ pander(table)
 
 ## Abundance plot for `r title`
 
-```{r, echo=FALSE}
+
+```{r, eval=checkNeg, results='asis'}
+cat('Results for this sample are negative, i.e. no reads have been matched to any sequence in the database.\n')
+```
+
+
+```{r, echo=FALSE, eval=checkPos}
 table %>%
   mutate(frequency = ifelse(strain==unique(strain)[1], freq, freq * -1)) %>%
   ggplot(aes(y=frequency, x=gene, fill=strain))+

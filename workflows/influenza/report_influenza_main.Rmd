@@ -43,7 +43,6 @@ library(pander)
 library(tidyverse)
 out = NULL
 for (file in reports) {
-  if(file.info(file)$size==0) next
   results <- file
   env = new.env()
   out = c(out, knit_child('~/CODE/core/workflows/influenza/report_loop_table.Rmd', envir=env))
