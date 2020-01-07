@@ -160,7 +160,7 @@ process Reporting {
   publishDir "${params.output_dir}", mode: 'copy'
 
   input:
-  file '*_blast_results.txt' from blast_results_ch.collect()
+  file blast_results from blast_results_ch.collect()
 
   output:
   file("${dbName}_report.html") into final_report_ch
@@ -172,7 +172,7 @@ process Reporting {
   Rscript $HOME/CODE/core/workflows/influenza/report_run_influenza-report.R \
   $HOME/CODE/core/workflows/influenza/report_influenza_main.Rmd \
   "${dbName}_report.html" \
-  *_blast_results.txt
+  ${blast_results}
 
   """
 
