@@ -171,7 +171,8 @@ process Reporting {
   script:
   """
   module load R/3.6.0
-  
+  module load pandoc/2.2.3.2-0
+
   Rscript $HOME/CODE/core/workflows/influenza/report_run_influenza-report.R \
   $HOME/CODE/core/workflows/influenza/report_influenza_main.Rmd \
   "${dbName}_report.html" \
