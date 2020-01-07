@@ -173,8 +173,9 @@ process Reporting {
 
   script:
   """
+  conda init bash
   conda activate /home/AD/flescai/.conda/envs/influenza
-  
+
   Rscript $HOME/CODE/core/workflows/influenza/report_run_influenza-report.R \
   $HOME/CODE/core/workflows/influenza/report_influenza_main.Rmd \
   "${dbName}_report.html" \
