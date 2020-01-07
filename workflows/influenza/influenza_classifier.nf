@@ -108,10 +108,10 @@ process createBlastDatabase {
 process blastSearch {
 
   tag "processing sample $sampleId"
-  cpus 24
+  cpus 12
   queue 'WORK'
   time '1h'
-  memory '12 GB'
+  memory '6 GB'
 
   // note:
   // the line below presumes you have cloned our github repository
@@ -167,7 +167,7 @@ process Reporting {
 
   script:
   """
-  module avail R/3.6.0
+  module load R/3.6.0
 
   Rscript $HOME/CODE/core/workflows/influenza/report_run_influenza-report.R \
   $HOME/CODE/core/workflows/influenza/report_influenza_main.Rmd \
