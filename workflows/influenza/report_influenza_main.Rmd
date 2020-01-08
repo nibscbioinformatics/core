@@ -1,0 +1,53 @@
+---
+title: "Influenza Characterisation Report"
+author: "Francesco Lescai and Thomas Bleazard"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    theme: readable
+    highlight: tango
+    toc: true
+    toc_float: true
+    css: ~/CODE/core/reports_templates/nibsc_report.css
+editor_options:
+  chunk_output_type: console
+params:
+  data: NULL
+---
+
+
+# Introduction
+
+The analysis has been generating with the following steps:
+
+- A Blast database has been built, using the provided parent genome sequences
+- For each sample, a blast search for each read has been performed against the parental database using the best match approach (i.e. only the best result reported): in this way, each read is classified as belonging to either parental strain
+- A table has been generated, where a percentage is reported as fraction of all reads assigned to each viral gene.
+
+
+# Results
+
+The following results are reported by sample, and have been generated with the procedure described above.
+
+
+```{r parseInput, include=FALSE}
+reports <- strsplit(params$data, " ")
+```
+
+
+
+
+```{r run-summary-md, include=FALSE}
+library(knitr)
+library(pander)
+library(tidyverse)
+out = NULL
+for (file in reports) {
+  results <- file
+  env = new.env()
+  out = c(out, knit_child('~/CODE/core/workflows/influenza/report_loop_table.Rmd', envir=env))
+}
+
+```
+
+`r paste(out, collapse = '\n')`
