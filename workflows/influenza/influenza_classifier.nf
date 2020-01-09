@@ -50,7 +50,7 @@ if (params.help)
     log.info "Mandatory arguments:"
     log.info "--reads                         READS FOLDER              Folder with sample reads"
     log.info "--origin                        PARENTS FASTA FILE        Fasta file with sequences of viral parents"
-    log.ingo "--db                            DB NAME                   Name of Blast DB to be created"
+    log.info "--db                            DB NAME                   Name of Blast DB to be created"
     log.info "--output_dir                    OUTPUT FOLDER             Output for classification results"
     exit 1
 }
@@ -70,13 +70,22 @@ Channel
 database_fasta_ch = Channel.fromPath(params.origin)
 dbName = params.db
 
+
+// the following process creates a blast database out of the parental sequences
+// the BLAST database is composed of a series of index files, and therefore maintains
+// a base name, while adding different file extensions to each file
+
+log.info "----------------------------------------------------------------------------"
+log.info "the workflow is now creating the BLAST database from the parental sequences"
+log.info "----------------------------------------------------------------------------"
+
 process createBlastDatabase {
 
   tag "${dbFasta.baseName}"
   cpus 1
   queue 'WORK'
   time '1h'
-  memory '12 GB'
+  memory '3 GB'
 
   // note:
   // the line below presumes you have cloned our github repository
@@ -105,10 +114,18 @@ process createBlastDatabase {
 }
 
 
+// the following process is based simply on a blastn run recursively on each read for each sample
+// the fastq file is converted in fasta first, which is the input of blastn
+// the settings are specified to output a custom format and only report the top scoring match
+
+log.info "----------------------------------------------------------------------------"
+log.info "the workflow is now blasting each sample in parallel against the database"
+log.info "----------------------------------------------------------------------------"
+
 process blastSearch {
 
   tag "processing sample $sampleId"
-  cpus 12
+  cpus 8
   queue 'WORK'
   time '1h'
   memory '6 GB'
@@ -135,7 +152,8 @@ process blastSearch {
 
   script:
   """
-  zcat $reads | /home/AD/flescai/.conda/envs/influenza/bin/seqkit fq2fa -o ${sampleId}.fa
+  module load seqkit/0.11.0-0
+  zcat $reads | seqkit fq2fa -o ${sampleId}.fa
 
   /usr/share/sequencing/tools/ncbi-blast-2.9.0+-src/c++/ReleaseMT/bin/blastn \
   -query ${sampleId}.fa \
@@ -148,6 +166,18 @@ process blastSearch {
   """
 
 }
+
+
+
+// in the following process we are creating a report, using R and RMarkdown
+// we use the custom format defined above as input for R
+// we then use dplyr to summarise the abundance of each gene
+// and a parameterised markdown file allows the creation of one section with
+// table and plots for each sample
+
+log.info "----------------------------------------------------------------------------"
+log.info "the workflow is now preparing the final report"
+log.info "----------------------------------------------------------------------------"
 
 
 process Reporting {
@@ -178,9 +208,6 @@ process Reporting {
   "${dbName}_report.html" \
   ${blast_results}
   """
-
-
-
 }
 
 
