@@ -75,9 +75,6 @@ dbName = params.db
 // the BLAST database is composed of a series of index files, and therefore maintains
 // a base name, while adding different file extensions to each file
 
-log.info "----------------------------------------------------------------------------"
-log.info "the workflow is now creating the BLAST database from the parental sequences"
-log.info "----------------------------------------------------------------------------"
 
 process createBlastDatabase {
 
@@ -118,9 +115,6 @@ process createBlastDatabase {
 // the fastq file is converted in fasta first, which is the input of blastn
 // the settings are specified to output a custom format and only report the top scoring match
 
-log.info "----------------------------------------------------------------------------"
-log.info "the workflow is now blasting each sample in parallel against the database"
-log.info "----------------------------------------------------------------------------"
 
 process blastSearch {
 
@@ -174,10 +168,6 @@ process blastSearch {
 // we then use dplyr to summarise the abundance of each gene
 // and a parameterised markdown file allows the creation of one section with
 // table and plots for each sample
-
-log.info "----------------------------------------------------------------------------"
-log.info "the workflow is now preparing the final report"
-log.info "----------------------------------------------------------------------------"
 
 
 process Reporting {
