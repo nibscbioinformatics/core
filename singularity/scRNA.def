@@ -24,8 +24,5 @@ cp seqkit /usr/bin/.
 mkdir -p /opt/cellranger
 cd /opt/cellranger
 wget -O cellranger-3.1.0.tar.gz "http://cf.10xgenomics.com/releases/cell-exp/cellranger-3.1.0.tar.gz?Expires=1578952112&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cDovL2NmLjEweGdlbm9taWNzLmNvbS9yZWxlYXNlcy9jZWxsLWV4cC9jZWxscmFuZ2VyLTMuMS4wLnRhci5neiIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTU3ODk1MjExMn19fV19&Signature=bBZdDm~FN0OP7O1gyOodkymqnuCDAqB0ouebY7Mtbwl7OPfHNhixAWiaPNv74dhwIWTH4p0oxpEKEeS6KMIVfxXnYAOYa4~FroT4sKFShComRMrPbO5Pwy0hhGZ5TRvf~TzFhv4k8PXhm8ikbT9htcy2Dxcx1rn7DEI-3LXex5iv0l04hptHXynh2HN0P~GRrjQFS~ujsTEPeoKkohV0UJJkgLmRRtDSHNV1szwNLMfTPocOl35BgYVj1qpEZMp10fYBWe4wFfsYkzISEd5Qdaot~x6PAvUXLzryJIcx6sawR6nw4pzoWjxVbGo4tD7ypRTVAH4Ofxup~C42DfpS2g__&Key-Pair-Id=APKAI7S6A5RYOXBWRPDA"
-wget http://cf.10xgenomics.com/supp/cell-exp/refdata-cellranger-GRCh38-3.0.0.tar.gz
-wget http://cf.10xgenomics.com/supp/cell-exp/refdata-cellranger-hg19-3.0.0.tar.gz
 tar -xzvf cellranger-3.1.0.tar.gz
-tar -xzvf refdata-cellranger-GRCh38-3.0.0.tar.gz
 export PATH=/opt/cellranger/cellranger-3.1.0:$PATH
