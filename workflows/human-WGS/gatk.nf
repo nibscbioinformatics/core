@@ -31,7 +31,6 @@ references.into {
 }
 
 process doalignment {
-  publishDir "$params.outdir/alignments", mode: "copy"
   cpus 32
   queue 'WORK'
   time '48h'
@@ -51,7 +50,6 @@ process doalignment {
 }
 
 process sorttobam {
-  publishDir "$params.outdir/alignments", mode: "copy"
   cpus 8
   queue 'WORK'
   time '8h'
@@ -70,7 +68,6 @@ process sorttobam {
 }
 
 process markduplicates {
-  publishDir "$params.outdir/alignments", mode: "copy"
   cpus 8
   queue 'WORK'
   time '8h'
@@ -89,7 +86,6 @@ process markduplicates {
 }
 
 process baserecalibrationtable {
-  publishDir "$params.outdir/alignments", mode: "copy"
   cpus 8
   queue 'WORK'
   time '16h'
@@ -155,7 +151,6 @@ forcaller.into {
 }
 
 process haplotypecall {
-  publishDir "$params.outdir/analysis", mode: "copy"
   cpus 32
   queue 'WORK'
   time '48h'
@@ -175,7 +170,6 @@ process haplotypecall {
 }
 
 process mutectcall {
-  publishDir "$params.outdir/analysis", mode: "copy"
   cpus 32
   queue 'WORK'
   time '48h'
@@ -195,7 +189,6 @@ process mutectcall {
 }
 
 process mutectfilter {
-  publishDir "$params.outdir/analysis", mode: "copy"
   cpus 32
   queue 'WORK'
   time '24h'
@@ -260,7 +253,6 @@ process hardfilter {
 }
 
 process remergevars {
-  publishDir "$params.outdir/analysis", mode: "copy"
   cpus 8
   queue 'WORK'
   time '8h'
