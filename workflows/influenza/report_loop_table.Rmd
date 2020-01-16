@@ -57,8 +57,9 @@ cat('Results for this sample are negative, i.e. no reads have been matched to an
 
 
 ```{r, echo=FALSE, eval=checkPos}
+strains = unique(table$strain)[order(unique(table$strain))]
 table %>%
-  mutate(frequency = ifelse(strain==unique(strain)[1], freq, freq * -1)) %>%
+  mutate(frequency = ifelse(strain==strains[1], freq, freq * -1)) %>%
   ggplot(aes(y=frequency, x=gene, fill=strain))+
   geom_bar(stat = "identity")
 ```
