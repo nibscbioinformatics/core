@@ -49,23 +49,35 @@ if (params.help)
     log.info "nextflow run nibsbioinformatics/core/workflows/singlecellrna/scrna_short.nf [OPTIONS]"
     log.info ""
     log.info "Mandatory arguments:"
-    log.info "--project                       PROJECT FOLDER            Folder containing one sub folder per sample (each with reads)"
+    log.info "--metadata                      PROJECT METADATA          Metadata file with 3 columns linking sample name and fastqs"
     log.info "--output_dir                    OUTPUT FOLDER             Folder where output sub-folders and results will be copied"
-    log.info "--reference                     REFERENCE TRANSCRIPTOME   File referering to the reference transcriptome to be used"
+    log.info "--reference                     TRANSCRIPTOME FOLDER      Folder where the reference transcriptome for cellranger is located"
     exit 1
 }
 
 // initialisation of parameters before passed by command line or config file
 
-params.project          = null
+params.metadata          = null
 params.output_dir     = "."
 
-samples_ch = Channel.fromPath( "$params.project/*", type: 'dir' )
+
+// samples metadata need to be specified in tabular format with the following information (per column)
+// SAMPLE NAME (which goes into cell ranger)
+// SAMPLE ID(s) again in cell ranger specification from fastq files for merging
+// FASTQ FOLDER(s) where files with a name formatted to begin with the provided sample ID are present
+// the file has to be tab separated because a coma is used to separate ids and folders
+
+
+metadata_ch = Channel
+                  .fromPath("${params.metadata}")
+                  .splitCsv(header: ['sampleID', 'fastqIDs', 'fastqLocs'], sep: '\t')
 
 
 // This first process uses the CellRanger suite in order to process the reads per sample
 // collapse the UMIs and identify cell barcodes
 // creating the genome alingments as well as the expression counts
+
+
 
 process CellRangerCount {
 
@@ -75,19 +87,25 @@ process CellRangerCount {
   time '2d'
   memory '250 GB'
 
-  publishDir "$params.output_dir/counting/$sampleId", mode: 'copy'
+  publishDir "$params.output_dir/counting/$sampleName", mode: 'copy'
 
   input:
-  set sampleId, val(sampleFolder) from samples_ch
+  set sample_data from metadata_ch
+  sampleName = sample_data.sampleID
 
   output:
-  file(XXXX) into counts_ch
-  file(YYYY) into alignments_ch
-  file(ZZZZ) into reports_ch
+  file("./$sampleName/outs/metrics_summary.csv") into cellranger_summary_ch
+  file("./$sampleName/outs/filtered_feature_bc_matrix/*.gz") into count_files_ch
+  tuple val($sampleName), file("./$sampleName/outs/filtered_feature_bc_matrix/") into count_folders_ch
+  file("./$sampleName/outs/") into alignments_ch
 
   script:
   """
-  cellranger count XXXXXXXXXXX
+  cellranger count \
+  --id=${sample_data.sampleID} \
+  --sample=${sample_data.fastqIDs} \
+  --fastq=${sample_data.fastLocs} \
+  --transcriptome=$params.reference
   """
 
 }
@@ -107,14 +125,21 @@ process Aggregate {
   publishDir "$params.output_dir/aggregated", mode: 'copy'
 
   input:
-  file(counts) from counts_ch.collect()
+  set sampleNames, countFolders from count_folders_ch.collect()
 
   output:
-  file(XXXX) into aggregate_filtered_ch, aggregate_unfiltered_ch
+  file('aggregated_object') into aggregate_filtered_ch, aggregate_unfiltered_ch
 
   script:
   """
-  Rscript $HOME/CODE/core/workflows/singlecellrna/aggregate.R
+  Rscript -e "workdir<-getwd()
+  rmarkdown::render('$HOME/CODE/core/workflows/singlecellrna/seurat_scripts/aggregate.Rmd',
+    params = list(
+      sample_paths = \"$sampleNames\",
+      sample_names = \"$countFolders\",
+      output_path = workdir),
+      knit_root_dir=workdir,
+      output_dir=workdir)"
   """
 
 }
