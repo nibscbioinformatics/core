@@ -91,6 +91,8 @@ process CellRangerCount {
 
   input:
   set sample_data from metadata_ch
+
+
   sampleName = ${sample_data.sampleID}
 
   output:
