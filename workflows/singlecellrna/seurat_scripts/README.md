@@ -24,32 +24,32 @@ Note: ```/path/to/sample/``` is the cellranger output folder ```/outs/filtered_f
 
 ## Analyse unfiltered data
 
-	Analysis (unfiltered):
+Analysis (unfiltered):
 
 		```
     Rscript -e "rmarkdown::render('analyse_unfiltered.Rmd', params = list(input_path = '/path/to/input'))"
 		```
 
-		Example:
+Example:
 
 		```
     Rscript -e "rmarkdown::render('analyse_filtered.Rmd', params = list(input_path = '/home/AD/praposo/WGS/scRNA_nextflow/'))"
 		```
 
-		Note: ```/path/to/input``` is folder where ```'aggregated_object'``` is found
+Note: ```/path/to/input``` is folder where ```'aggregated_object'``` is found
 
 ## Analyse the filtered data
 
-	Analysis (filtered):
+Analysis (filtered):
 
 		```
     Rscript -e "rmarkdown::render('analyse_filtered.Rmd', params = list(input_path = '/path/to/input'))"
 		```
 
-		Example:
-    
+Example:
+
 		```
     Rscript -e "rmarkdown::render('analyse_filtered.Rmd', params = list(input_path = '/home/AD/praposo/WGS/scRNA_nextflow/'))"
 		```
 
-		Note: /path/to/input is folder where 'aggregated_object' is found
+Note: /path/to/input is folder where 'aggregated_object' is found
