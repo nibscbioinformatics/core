@@ -128,7 +128,7 @@ process Aggregate {
   set sampleNames, countFolders from count_folders_ch.collect()
 
   output:
-  file('aggregated_object') into aggregate_filtered_ch, aggregate_unfiltered_ch
+  file(aggregatedObj) into aggregate_filtered_ch, aggregate_unfiltered_ch
 
   script:
   """
@@ -158,14 +158,18 @@ process ExploreUnfiltered {
   publishDir "$params.output_dir/reports", mode: 'copy'
 
   input:
-  file(robject) from aggregate_unfiltered_ch
+  file(aggregatedObj) from aggregate_unfiltered_ch
 
   output:
-  file('unfiltered_report.html') into unfiltered_report_ch
+  file('analyse_unfiltered.html') into unfiltered_report_ch
 
   script:
   """
-  Rscript $HOME/CODE/core/workflows/singlecellrna/unfiltered_report.R
+  Rscript -e "workdir<-getwd()
+    rmarkdown::render('$HOME/CODE/core/workflows/singlecellrna/seurat_scripts/analyse_unfiltered.Rmd',
+    params = list(input_path = workdir),
+    knit_root_dir=workdir,
+    output_dir=workdir)"
   """
 }
 
@@ -181,14 +185,18 @@ process ExploreFiltered {
   publishDir "$params.output_dir/reports", mode: 'copy'
 
   input:
-  file(robject) from aggregate_filtered_ch
+  file(aggregatedObj) from aggregate_filtered_ch
 
   output:
-  file('filtered_report.html') into filtered_report_ch
+  file('analyse_filtered.html') into filtered_report_ch
 
   script:
   """
-  Rscript $HOME/CODE/core/workflows/singlecellrna/filtered_report.R
+  Rscript -e "workdir<-getwd()
+    rmarkdown::render('$HOME/CODE/core/workflows/singlecellrna/seurat_scripts/analyse_filtered.Rmd', 
+    params = list(input_path = workdir),
+    knit_root_dir=workdir,
+    output_dir=workdir))"
   """
 }
 

@@ -19,7 +19,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r loading}
 options(warn=-1)
 
-aggregated_path = paste(params$input_path, '/aggregated_object', sep = '')
+aggregated_path = params$input_path
 output_path = paste(params$input_path, '/aggregated_object_analyzed_unfiltered', sep = '')
 
 library(Seurat)
