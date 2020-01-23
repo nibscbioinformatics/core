@@ -14,6 +14,7 @@ Aggregate samples:
     ```
 
 Example:
+
 		```
     Rscript -e "rmarkdown::render('aggregate.Rmd', params = list(sample_paths = '/home/AD/praposo/software/cell_ranger/cellranger-3.0.2/MSC/MSC_components/bone_marrow/outs/filtered_feature_bc_matrix/,/home/AD/praposo/software/cell_ranger/cellranger-3.0.2/MSC/MSC_components/bone_marrow_mb/outs/filtered_feature_bc_matrix/,/home/AD/praposo/software/cell_ranger/cellranger-3.0.2/MSC/MSC_components/adipose/outs/filtered_feature_bc_matrix/', sample_names = 'BM,BM2,Adipose', output_path = '/home/AD/praposo/WGS/'))"
 
@@ -24,11 +25,13 @@ Note: ```/path/to/sample/``` is the cellranger output folder ```/outs/filtered_f
 ## Analyse unfiltered data
 
 	Analysis (unfiltered):
+
 		```
     Rscript -e "rmarkdown::render('analyse_unfiltered.Rmd', params = list(input_path = '/path/to/input'))"
 		```
 
 		Example:
+
 		```
     Rscript -e "rmarkdown::render('analyse_filtered.Rmd', params = list(input_path = '/home/AD/praposo/WGS/scRNA_nextflow/'))"
 		```
@@ -38,11 +41,13 @@ Note: ```/path/to/sample/``` is the cellranger output folder ```/outs/filtered_f
 ## Analyse the filtered data
 
 	Analysis (filtered):
+
 		```
     Rscript -e "rmarkdown::render('analyse_filtered.Rmd', params = list(input_path = '/path/to/input'))"
 		```
 
 		Example:
+    
 		```
     Rscript -e "rmarkdown::render('analyse_filtered.Rmd', params = list(input_path = '/home/AD/praposo/WGS/scRNA_nextflow/'))"
 		```
