@@ -93,14 +93,12 @@ process CellRangerCount {
   set sample_data from metadata_ch
 
   output:
-  file("./$sampleName/outs/metrics_summary.csv") into cellranger_summary_ch
-  file("./$sampleName/outs/filtered_feature_bc_matrix/*.gz") into count_files_ch
-  tuple val($sampleName), file("./$sampleName/outs/filtered_feature_bc_matrix/") into count_folders_ch
-  file("./$sampleName/outs/") into alignments_ch
+  file("./${sample_data.sampleID}/outs/metrics_summary.csv") into cellranger_summary_ch
+  file("./${sample_data.sampleID}/outs/filtered_feature_bc_matrix/*.gz") into count_files_ch
+  tuple val(${sample_data.sampleID}), file("./${sample_data.sampleID}/outs/filtered_feature_bc_matrix/") into count_folders_ch
+  file("./${sample_data.sampleID}/outs/") into alignments_ch
 
   script:
-
-  sampleName = ${sample_data.sampleID}
 
   """
   cellranger count \
