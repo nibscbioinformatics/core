@@ -92,9 +92,6 @@ process CellRangerCount {
   input:
   set sample_data from metadata_ch
 
-
-  sampleName = ${sample_data.sampleID}
-
   output:
   file("./$sampleName/outs/metrics_summary.csv") into cellranger_summary_ch
   file("./$sampleName/outs/filtered_feature_bc_matrix/*.gz") into count_files_ch
@@ -102,6 +99,9 @@ process CellRangerCount {
   file("./$sampleName/outs/") into alignments_ch
 
   script:
+
+  sampleName = ${sample_data.sampleID}
+
   """
   cellranger count \
   --id=${sample_data.sampleID} \
