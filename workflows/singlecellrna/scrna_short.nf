@@ -34,7 +34,7 @@ log.info """\
 
         PARAMETERS RECEIVED:
         --------------------------------
-        PROJECT FOLDER: ${params.project}
+        METADATA: ${params.metadata}
         OUTPUT FOLDER ${params.output_dir}
         REFERENCE ${params.reference}
         """
@@ -91,7 +91,7 @@ process CellRangerCount {
 
   input:
   set sample_data from metadata_ch
-  sampleName = sample_data.sampleID
+  sampleName = ${sample_data.sampleID}
 
   output:
   file("./$sampleName/outs/metrics_summary.csv") into cellranger_summary_ch
