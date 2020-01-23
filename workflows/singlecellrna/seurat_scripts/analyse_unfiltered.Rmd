@@ -32,7 +32,13 @@ load(file = aggregated_path)
 
 ```{r normalize}
 aggregated_samples = PercentageFeatureSet(aggregated_samples, pattern = "^MT-", col.name = "percent.mt")
-aggregated_samples = SCTransform(aggregated_samples, verbose = FALSE)
+
+s.genes <- cc.genes.updated.2019$s.genes
+g2m.genes <- cc.genes.updated.2019$g2m.genes
+aggregated_samples <- CellCycleScoring(aggregated_samples, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
+aggregated_samples$CC.Difference <- aggregated_samples$S.Score - aggregated_samples$G2M.Score
+aggregated_samples = SCTransform(aggregated_samples, vars.to.regress = "CC.Difference", verbose = FALSE)
+
 aggregated_samples = RunPCA(aggregated_samples)
 ```
 

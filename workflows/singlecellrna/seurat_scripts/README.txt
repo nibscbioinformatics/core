@@ -21,11 +21,9 @@ The files 'aggregate_example.html', 'analyse_unfiltered_example.html' and 'analy
 		
 		
 	Analysis (filtered):
-		Rscript -e "rmarkdown::render('analyse_filtered.Rmd', params = list(input_path = '/path/to/input', cell_cycle_file_path = '/path/to/cell_cycle_file'))"
+		Rscript -e "rmarkdown::render('analyse_filtered.Rmd', params = list(input_path = '/path/to/input'))"
 		
 		Example:
-		Rscript -e "rmarkdown::render('analyse_filtered.Rmd', params = list(input_path = '/home/AD/praposo/WGS/scRNA_nextflow/', cell_cycle_file_path = '/home/AD/praposo/scRNA_seq/MSC/cell_cycle_vignette_files/nestorawa_forcellcycle_expressionMatrix.txt'))"
+		Rscript -e "rmarkdown::render('analyse_filtered.Rmd', params = list(input_path = '/home/AD/praposo/WGS/scRNA_nextflow/'))"
 		
 		Note: /path/to/input is folder where 'aggregated_object' is found
-		Note: /path/to/cell_cycle_file is 'nestorawa_forcellcycle_expressionMatrix.txt' file. Download here: https://www.dropbox.com/s/3dby3bjsaf5arrw/cell_cycle_vignette_files.zip?dl=1
-		
