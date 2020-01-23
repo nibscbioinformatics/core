@@ -7,7 +7,6 @@ output:
   df_print: paged
 params:
   input_path: input_path
-  cell_cycle_file_path: cell_cycle_file_path
 ---
 
 ```{r setup, include=FALSE}
@@ -20,7 +19,6 @@ knitr::opts_chunk$set(echo = TRUE)
 options(warn=-1)
 
 aggregated_path = params$input_path
-output_path = paste(params$input_path, '/aggregated_object_analyzed_unfiltered', sep = '')
 
 library(Seurat)
 library(dplyr)
@@ -95,5 +93,5 @@ DoHeatmap(aggregated_samples, features = top10$gene) + NoLegend()
 ## Save file
 
 ```{r saving}
-save(aggregated_samples, file = output_path)
+save(aggregated_samples, file = "aggregated_object_analyzed_unfiltered.RData")
 ```

@@ -47,5 +47,5 @@ aggregated_samples <- merge(list_sample_objects[[1]], y = tail(list_sample_objec
 ## Save file
 
 ```{r save}
-save(aggregated_samples, file = paste(output_path, '/aggregated_object', sep = ''))
+save(aggregated_samples, file = paste(output_path, '/aggregated_object.RData', sep = ''))
 ```

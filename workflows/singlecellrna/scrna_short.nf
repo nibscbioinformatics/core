@@ -128,7 +128,7 @@ process Aggregate {
   set sampleNames, countFolders from count_folders_ch.collect()
 
   output:
-  file(aggregatedObj) into aggregate_filtered_ch, aggregate_unfiltered_ch
+  file('aggregated_object.RData') into aggregate_filtered_ch, aggregate_unfiltered_ch
 
   script:
   """
@@ -162,12 +162,13 @@ process ExploreUnfiltered {
 
   output:
   file('analyse_unfiltered.html') into unfiltered_report_ch
+  file('aggregated_object_analyzed_unfiltered.RData') into unfiltered_object_ch
 
   script:
   """
   Rscript -e "workdir<-getwd()
     rmarkdown::render('$HOME/CODE/core/workflows/singlecellrna/seurat_scripts/analyse_unfiltered.Rmd',
-    params = list(input_path = workdir),
+    params = list(input_path = $aggregatedObj),
     knit_root_dir=workdir,
     output_dir=workdir)"
   """
@@ -189,12 +190,13 @@ process ExploreFiltered {
 
   output:
   file('analyse_filtered.html') into filtered_report_ch
+  file('aggregated_object_analyzed_filtered.RData') into filtered_object_ch
 
   script:
   """
   Rscript -e "workdir<-getwd()
-    rmarkdown::render('$HOME/CODE/core/workflows/singlecellrna/seurat_scripts/analyse_filtered.Rmd', 
-    params = list(input_path = workdir),
+    rmarkdown::render('$HOME/CODE/core/workflows/singlecellrna/seurat_scripts/analyse_filtered.Rmd',
+    params = list(input_path = $aggregatedObj),
     knit_root_dir=workdir,
     output_dir=workdir))"
   """
