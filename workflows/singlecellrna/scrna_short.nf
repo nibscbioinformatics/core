@@ -96,7 +96,7 @@ process CellRangerCount {
   output:
   file("./$sampleName/outs/metrics_summary.csv") into cellranger_summary_ch
   file("./$sampleName/outs/filtered_feature_bc_matrix/*.gz") into count_files_ch
-  tuple val(sampleName), file("./$sampleName/outs/filtered_feature_bc_matrix/") into count_folders_ch
+  tuple sampleName, file("./$sampleName/outs/filtered_feature_bc_matrix/") into count_folders_ch
   file("./$sampleName/outs/") into alignments_ch
 
   script:
