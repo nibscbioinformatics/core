@@ -130,7 +130,7 @@ process Aggregate {
   set sampleNames, countFolders from count_folders_ch.collect()
 
   output:
-  file('aggregated_object.RData') into aggregate_filtered_ch, aggregate_unfiltered_ch
+  file('aggregated_object.RData') into (aggregate_filtered_ch, aggregate_unfiltered_ch)
 
   script:
   """
