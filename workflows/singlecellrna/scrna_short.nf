@@ -106,7 +106,7 @@ process CellRangerCount {
   cellranger count \
   --id=${sampleName} \
   --sample=${fastqIDs} \
-  --fastq=${fastqLocs} \
+  --fastqs=${fastqLocs} \
   --transcriptome=$params.reference
   """
 
