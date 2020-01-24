@@ -70,7 +70,7 @@ params.output_dir     = "."
 Channel
       .fromPath("${params.metadata}")
       .splitCsv(header: ['sampleID', 'fastqIDs', 'fastqLocs'], sep: '\t')
-      .map{ row-> tuple(row.sampleId, row.fastqIDs, row.fastLocs) }
+      .map{ row-> tuple(row.sampleID, row.fastqIDs, row.fastLocs) }
       .set { metadata_ch }
 
 
@@ -91,7 +91,7 @@ process CellRangerCount {
   publishDir "$params.output_dir/counting/$sampleName", mode: 'copy'
 
   input:
-  tuple sampleName, fastqIDs, fastLocs  from metadata_ch
+  tuple sampleName, fastqIDs, fastLocs from metadata_ch
 
 
   output:
