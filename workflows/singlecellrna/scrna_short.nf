@@ -67,10 +67,11 @@ params.output_dir     = "."
 // FASTQ FOLDER(s) where files with a name formatted to begin with the provided sample ID are present
 // the file has to be tab separated because a coma is used to separate ids and folders
 
-
-metadata_ch = Channel
-                  .fromPath("${params.metadata}")
-                  .splitCsv(header: ['sampleID', 'fastqIDs', 'fastqLocs'], sep: '\t')
+Channel
+      .fromPath("${params.metadata}")
+      .splitCsv(header: ['sampleID', 'fastqIDs', 'fastqLocs'], sep: '\t')
+      .map{ row-> tuple(row.sampleId, row.fastqIDs, row.fastLocs) }
+      .set { metadata_ch }
 
 
 // This first process uses the CellRanger suite in order to process the reads per sample
@@ -90,7 +91,7 @@ process CellRangerCount {
   publishDir "$params.output_dir/counting/$sampleName", mode: 'copy'
 
   input:
-  set sampleName, fastqIDs, fastLocs  from metadata_ch
+  tuple sampleName, fastqIDs, fastLocs  from metadata_ch
 
 
   output:
