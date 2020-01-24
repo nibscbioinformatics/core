@@ -70,9 +70,6 @@ params.output_dir     = "."
 Channel
       .fromPath("${params.metadata}")
       .splitCsv(header: ['sampleID', 'fastqIDs', 'fastqLocs'], sep: '\t')
-      .subscribe { row ->
-                    println "${row.sampleID} - ${row.fastqIDs} - ${row.fastqLocs}"
-                  }
       .map{ row-> tuple(row.sampleID, row.fastqIDs, row.fastLocs) }
       .set { metadata_ch }
 
