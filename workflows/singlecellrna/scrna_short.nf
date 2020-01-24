@@ -90,23 +90,22 @@ process CellRangerCount {
   publishDir "$params.output_dir/counting/$sampleName", mode: 'copy'
 
   input:
-  set sample_data from metadata_ch
+  set sampleName, fastqIDs, fastLocs  from metadata_ch
 
 
   output:
   file("./$sampleName/outs/metrics_summary.csv") into cellranger_summary_ch
   file("./$sampleName/outs/filtered_feature_bc_matrix/*.gz") into count_files_ch
-  //tuple val(sampleName), file("./$sampleName/outs/filtered_feature_bc_matrix/") into count_folders_ch
+  tuple val(sampleName), file("./$sampleName/outs/filtered_feature_bc_matrix/") into count_folders_ch
   file("./$sampleName/outs/") into alignments_ch
 
   script:
-  sampleName = sample_data.sampleID
 
   """
   cellranger count \
-  --id=${sample_data.sampleID} \
-  --sample=${sample_data.fastqIDs} \
-  --fastq=${sample_data.fastLocs} \
+  --id=${sampleName} \
+  --sample=${fastqIDs} \
+  --fastq=${fastLocs} \
   --transcriptome=$params.reference
   """
 
