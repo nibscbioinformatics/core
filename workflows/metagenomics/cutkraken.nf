@@ -5,17 +5,17 @@
 params.mergelanes = false
 params.indir = "/usr/share/sequencing/projects/272/raw_data"
 params.outdir = "/usr/share/sequencing/projects/272"
-params.cpus = "32"
+params.adapterfile = "/usr/share/sequencing/references/adapters/NexteraPE-PE.fa"
+params.cpus = "8"
 params.krakendb = "/usr/share/sequencing/references/metagenomes/standard_kraken_db/"
 
-krakendbdir = file(params.krakendb)
+krakendbdir = Channel
+  .fromPath(params.krakendb)
+
 krakendbdir.into {
   dbdir1
   dbdir2
-  dbdir3
-  dbdir4
 }
-
 
 //merging four lanes only when params.mergelanes = true
 if (params.mergelanes) {
@@ -128,7 +128,6 @@ if (params.mergelanes) {
 }
 
 process docutadapt {
-  publishDir "$params.outdir/alignments", mode: "copy"
   cpus 1
   queue 'WORK'
   time '12h'
@@ -167,22 +166,21 @@ process dotrimlog {
 }
 
 process dokraken {
-  publishDir "$params.outdir/analysis", mode: "copy"
-  cpus 32
+  cpus 8
   queue 'WORK'
   time '24h'
   memory '240 GB'
 
   input:
   set ( sampleprefix, file(forward), file(reverse) ) from trimmingoutput1
-  file(krakendatabase) from dbdir1
+  file(krakendatabase) from dbdir1.first()
 
   output:
   set ( sampleprefix, file("${sampleprefix}.kraken.mpa.report"), file("${sampleprefix}.kraken.report") ) into krakenoutput
 
   """
   module load kraken/1.1.1
-  kraken --threads ${params.cpus} --paired --preload --db $krakendatabase --classified-out ${sampleprefix}.kraken.classified --unclassified-out ${sampleprefix}.kraken.unclassified --out ${sampleprefix}.kraken.output $forward $reverse
+  kraken --threads ${params.cpus} --paired --preload --db $krakendatabase --classified-out ${sampleprefix}.kraken.classified --unclassified-out ${sampleprefix}.kraken.unclassified --output ${sampleprefix}.kraken.output $forward $reverse
   kraken-mpa-report --db $krakendatabase ${sampleprefix}.kraken.output > ${sampleprefix}.kraken.mpa.report
   kraken-report --db $krakendatabase ${sampleprefix}.kraken.output > ${sampleprefix}.kraken.report
   """
@@ -190,14 +188,14 @@ process dokraken {
 
 process dobracken {
   publishDir "$params.outdir/analysis", mode: "copy"
-  cpus 32
+  cpus 8
   queue 'WORK'
   time '24h'
   memory '240 GB'
 
   input:
   set ( sampleprefix, file(mpareport), file(krakenreport) ) from krakenoutput
-  file(krakendatabase) from dbdir2
+  file(krakendatabase) from dbdir2.first()
 
   output:
   set ( sampleprefix, file("${sampleprefix}.bracken.report") ) into brackenoutput
