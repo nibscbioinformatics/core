@@ -13,14 +13,20 @@ process testTuples {
   ids = []
   paths = []
   testInput.each() { a,b -> ids.add(a); paths.add(b) }
+  idall = ids.join(",")
+  pathall = paths.join(",")
   println "now printing the sample"
-  println "......."
-  println "-------------------"
-  print "$ids"
-  println "-------------------"
-  print "$paths"
-  println "-------------------"
-  println "......."
-  println "......."
+  println ".......\n"
+  println "-------------------\n"
+  print "$ids\n"
+  println "-------------------\n"
+  print "$paths\n"
+  println "-------------------\n"
+  println "collated ids \n"
+  println "$idall\n"
+  println "collated paths \n"
+  println "$pathall\n"
+  println ".......\n"
+  println ".......\n"
 
 }
