@@ -11,6 +11,11 @@ process testTuples {
 
   exec:
   println "now printing the sample"
+  println "......."
+  println "-------------------"
   print "$testInput"
+  println "-------------------"
+  println "......."
+  println "......."
 
 }
