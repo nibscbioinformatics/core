@@ -127,7 +127,7 @@ process Aggregate {
   publishDir "$params.output_dir/aggregated", mode: 'copy'
 
   input:
-  sampleData from count_folders_ch.collect()
+  tuple sampleData from count_folders_ch.collect()
 
   output:
   file('aggregated_object.RData') into (aggregate_filtered_ch, aggregate_unfiltered_ch)
