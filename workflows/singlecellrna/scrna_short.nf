@@ -127,13 +127,13 @@ process Aggregate {
   publishDir "$params.output_dir/aggregated", mode: 'copy'
 
   input:
-  tuple sampleData from count_folders_ch.collect()
+  tuple sampleNamesList, countFoldersList from count_folders_ch.collect()
 
   output:
   file('aggregated_object.RData') into (aggregate_filtered_ch, aggregate_unfiltered_ch)
 
   script:
-  sampleData.each() { k,v -> sampleNamesList << k; countFoldersList << v}
+  //sampleData.each() { k,v -> sampleNamesList << k; countFoldersList << v}
   sampleNames = sampleNamesList.join(",")
   countFolders = countFoldersList.join(",")
 
