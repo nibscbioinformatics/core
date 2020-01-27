@@ -10,7 +10,9 @@ process testTuples {
   tuple sample, path from samples_ch.collect()
 
   exec:
+  println "now printing the sample"
   println "$sample"
+  println "now printing the path"
   println "$path"
 
 }
