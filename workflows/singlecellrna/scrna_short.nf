@@ -133,7 +133,7 @@ process Aggregate {
   file('aggregated_object.RData') into (aggregate_filtered_ch, aggregate_unfiltered_ch)
 
   script:
-  sampleData.each() { k,v -> sampleNamesList << k, countFoldersList << v}
+  sampleData.each() { k,v -> sampleNamesList << k; countFoldersList << v}
   sampleNames = sampleNamesList.join(",")
   countFolders = countFoldersList.join(",")
 
