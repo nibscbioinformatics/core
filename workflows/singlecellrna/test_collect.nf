@@ -7,12 +7,10 @@ samples_ch = Channel.value([["sample1", "/path/to/sample1"],["sample2", "/path/t
 process testTuples {
 
   input:
-  tuple sample, path from samples_ch.collect()
+  testInput from samples_ch.collect()
 
   exec:
   println "now printing the sample"
-  println "$sample"
-  println "now printing the path"
-  println "$path"
+  print "$testInput"
 
 }
