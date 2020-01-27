@@ -10,10 +10,15 @@ process testTuples {
   val(testInput) from samples_ch.collect()
 
   exec:
+  ids = []
+  paths = []
+  testInput.each() { a,b -> ids.add(a); paths.add(b) }
   println "now printing the sample"
   println "......."
   println "-------------------"
-  print "$testInput"
+  print "$ids"
+  println "-------------------"
+  print "$paths"
   println "-------------------"
   println "......."
   println "......."
