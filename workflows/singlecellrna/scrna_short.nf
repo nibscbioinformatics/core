@@ -139,6 +139,7 @@ process Aggregate {
   file('aggregated_object.RData') into (aggregate_filtered_ch, aggregate_unfiltered_ch)
 
   script:
+
   """
   Rscript -e "workdir<-getwd()
   rmarkdown::render('$HOME/CODE/core/workflows/singlecellrna/seurat_scripts/aggregate.Rmd',
