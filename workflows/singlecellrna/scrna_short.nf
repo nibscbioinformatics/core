@@ -129,16 +129,16 @@ process Aggregate {
   input:
   val(sampleData) from count_folders_ch.collect()
 
-  output:
-  file('aggregated_object.RData') into (aggregate_filtered_ch, aggregate_unfiltered_ch)
-
-  script:
   sampleNamesList = []
   countFoldersList = []
   sampleData.each() { a,b -> sampleNamesList.add(a); countFoldersList.add(b) }
   sampleNames = sampleNamesList.join(",")
   countFolders = countFoldersList.join(",")
 
+  output:
+  file('aggregated_object.RData') into (aggregate_filtered_ch, aggregate_unfiltered_ch)
+
+  script:
   """
   Rscript -e "workdir<-getwd()
   rmarkdown::render('$HOME/CODE/core/workflows/singlecellrna/seurat_scripts/aggregate.Rmd',
