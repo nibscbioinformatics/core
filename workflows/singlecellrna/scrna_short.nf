@@ -112,6 +112,24 @@ process CellRangerCount {
 
 }
 
+// attempt to process variables in another process and see if that work
+
+process CollateSamples {
+
+  input:
+  val(sampleData) from count_folders_ch.collect()
+
+  output:
+  tuple val(sampleNames), val(countFolders) into count_folders_string_ch
+
+  exec:
+  sampleNamesList = []
+  countFoldersList = []
+  sampleData.each() { a,b -> sampleNamesList.add(a); countFoldersList.add(b) }
+  sampleNames = sampleNamesList.join(",")
+  countFolders = countFoldersList.join(",")
+
+}
 
 // Next we use the Seurat package in order to aggregage the previously generated counts
 
@@ -127,13 +145,7 @@ process Aggregate {
   publishDir "$params.output_dir/aggregated", mode: 'copy'
 
   input:
-  val(sampleData) from count_folders_ch.collect()
-
-  sampleNamesList = []
-  countFoldersList = []
-  sampleData.each() { a,b -> sampleNamesList.add(a); countFoldersList.add(b) }
-  sampleNames = sampleNamesList.join(",")
-  countFolders = countFoldersList.join(",")
+  set sampleNames, countFolders  from count_folders_string_ch
 
   output:
   file('aggregated_object.RData') into (aggregate_filtered_ch, aggregate_unfiltered_ch)
