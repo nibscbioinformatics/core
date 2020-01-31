@@ -88,7 +88,7 @@ process CellRangerCount {
   time '2d'
   memory '250 GB'
 
-  publishDir "$params.output_dir/counting/$sampleName", mode: 'copy'
+  publishDir "$params.output_dir/counting/", mode: 'copy'
 
   input:
   set sampleName, fastqIDs, fastqLocs from metadata_ch
@@ -97,8 +97,8 @@ process CellRangerCount {
   output:
   file("$sampleName/outs/metrics_summary.csv") into cellranger_summary_ch
   file("$sampleName/outs/filtered_feature_bc_matrix/*.gz") into count_files_ch
-  tuple val("$sampleName"), val("${PWD}/${sampleName}/outs/filtered_feature_bc_matrix/") into count_folders_ch
   tuple file("$sampleName/outs/possorted_genome_bam.bam"), file("$sampleName/outs/possorted_genome_bam.bam.bai") into alignments_ch
+  val("$sampleName") into processed_samples
 
   script:
 
@@ -112,24 +112,6 @@ process CellRangerCount {
 
 }
 
-// attempt to process variables in another process and see if that work
-
-process CollateSamples {
-
-  input:
-  val(sampleData) from count_folders_ch.collect()
-
-  output:
-  tuple val(sampleNames), val(countFolders) into count_folders_string_ch
-
-  exec:
-  sampleNamesList = []
-  countFoldersList = []
-  sampleData.each() { a,b -> sampleNamesList.add(a); countFoldersList.add(b) }
-  sampleNames = sampleNamesList.join(",")
-  countFolders = countFoldersList.join(",")
-
-}
 
 // Next we use the Seurat package in order to aggregage the previously generated counts
 
@@ -145,12 +127,17 @@ process Aggregate {
   publishDir "$params.output_dir/aggregated", mode: 'copy'
 
   input:
-  set sampleNames, countFolders  from count_folders_string_ch
+  val(sampleData) from processed_samples.collect()
 
   output:
   file('aggregated_object.RData') into (aggregate_filtered_ch, aggregate_unfiltered_ch)
 
   script:
+  sampleNamesList = []
+  countFoldersList = []
+  sampleData.each() { a -> sampleNamesList.add(a); countFoldersList.add("$params.output_dir/counting/" + a + "/outs/filtered_feature_bc_matrix/") }
+  sampleNames = sampleNamesList.join(",")
+  countFolders = countFoldersList.join(",")
 
   """
   Rscript -e "workdir<-getwd()
