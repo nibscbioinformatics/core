@@ -206,7 +206,7 @@ process ExploreFiltered {
     rmarkdown::render('$HOME/CODE/core/workflows/singlecellrna/seurat_scripts/analyse_filtered.Rmd',
     params = list(input_path = \\\"$aggregatedObj\\\"),
     knit_root_dir=workdir,
-    output_dir=workdir))"
+    output_dir=workdir)"
   """
 }
 
