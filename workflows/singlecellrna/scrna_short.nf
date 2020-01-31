@@ -143,8 +143,8 @@ process Aggregate {
   Rscript -e "workdir<-getwd()
   rmarkdown::render('$HOME/CODE/core/workflows/singlecellrna/seurat_scripts/aggregate.Rmd',
     params = list(
-      sample_paths = \"$sampleNames\",
-      sample_names = \"$countFolders\",
+      sample_paths = \"$countFolders\",
+      sample_names = \"$sampleNames\",
       output_path = workdir),
       knit_root_dir=workdir,
       output_dir=workdir)"
