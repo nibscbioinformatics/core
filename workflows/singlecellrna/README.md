@@ -17,13 +17,21 @@ In order to launch the analysis, you will need the following input files
 - Path to an output folder, where the results will be stored
 
 
-## Running the pipeline
+## Testing the pipeline
 
 We assume you have cloned the repository in your home folder, under the path ```$HOME/CODE``` and therefore the path to the code will be ```$HOME/CODE/core```.
 
-The pipeline can be run with the following command
+**if** *(and only if)* you want to test the pipeline and have a small sample set, the workflow can be run by opening first an interactive session on a node:
 
 ```
+srun --mem=3g --pty /bin/bash
+```
+
+and then using the following command
+
+```
+module load NextFlow/latest
+
 nextflow \
 -c ~/CODE/core/workflows/singlecellrna/scRNA.config \
 run ~/CODE/core/workflows/singlecellrna/scrna_short.nf \
@@ -35,4 +43,22 @@ run ~/CODE/core/workflows/singlecellrna/scrna_short.nf \
 --output_dir /path/to/your/destination
 ```
 Note that the **singularity image** has been created and stored into our system, and the path is specified in the config file.
-You can create the image by using the image definition available under this folder **scRNA_image.def**. 
+You can create the image by using the image definition available under this folder **scRNA_image.def**.
+
+## Running the pipeline
+
+**In all other cases**, in order to run the pipeline on a ordinary dataset, you should instead submit a job which will execute the above command.
+
+The job script is also available in this folder and can be submitted by passing the same arguments required by nextflow, as follows:
+
+```
+sbatch \
+-D `pwd` \
+-o "`pwd`/nextflow_job_%j.out" \
+~/CODE/core/workflows/singlecellrna/run_nextflow_scRNA.job \
+/path/to/metadata/file.txt \
+/path/to/GRCh38/cellranger/refdata-cellranger-GRCh38-3.0.0 \
+/path/to/your/destination
+```
+
+You can also adjust the requested wall time (currently maxing to one day by default) by adding the option `-t 5:00:00` (in this example would change it to 5 hours).
