@@ -45,9 +45,11 @@ conda config --add channels biobakery
 
 conda install -c biobakery humann2
 
+echo "############## MAKING THE BIN EXECUTABLE VIA EXEC"
 cd /usr/bin
 ln -s /opt/anaconda/bin/* .
 
+echo "################ DOWNLOADING HUMANN2 DATABASES ###################"
 mkdir -p /opt/databases/humann2_dbs
 cd /opt/databases
 humann2_databases --download chocophlan full humann2_dbs
@@ -56,3 +58,6 @@ humann2_databases --download uniref uniref50_GO_filtered_rapsearch2 humann2_dbs
 humann2_databases --download uniref uniref50_diamond humann2_dbs
 humann2_databases --download uniref uniref90_ec_filtered_diamond humann2_dbs
 humann2_databases --download utility_mapping full humann2_dbs
+
+echo "############# SETUP COMPLETED ####################"
+echo "--------------------------------------------------"
