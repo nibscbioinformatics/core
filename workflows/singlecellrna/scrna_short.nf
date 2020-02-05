@@ -83,10 +83,10 @@ Channel
 process CellRangerCount {
 
   tag "counting"
-  cpus 32
+  cpus 12
   queue 'WORK'
   time '2d'
-  memory '250 GB'
+  memory '200 GB'
 
   publishDir "$params.output_dir/counting/", mode: 'copy'
 
@@ -119,10 +119,10 @@ process CellRangerCount {
 process Aggregate {
 
   tag "aggregate"
-  cpus 32
+  cpus 2
   queue 'WORK'
-  time '2d'
-  memory '250 GB'
+  time '24h'
+  memory '20 GB'
 
   publishDir "$params.output_dir/aggregated", mode: 'copy'
 
@@ -158,10 +158,10 @@ process Aggregate {
 process ExploreUnfiltered {
 
   tag "exploreUnfiltered"
-  cpus 12
+  cpus 2
   queue 'WORK'
-  time '24h'
-  memory '250 GB'
+  time '8h'
+  memory '20 GB'
 
   publishDir "$params.output_dir/reports", mode: 'copy'
 
@@ -186,10 +186,10 @@ process ExploreUnfiltered {
 process ExploreFiltered {
 
   tag "exploreFiltered"
-  cpus 12
+  cpus 2
   queue 'WORK'
-  time '24h'
-  memory '250 GB'
+  time '8h'
+  memory '20 GB'
 
   publishDir "$params.output_dir/reports", mode: 'copy'
 
