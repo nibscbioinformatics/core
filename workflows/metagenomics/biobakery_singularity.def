@@ -31,7 +31,7 @@ yum install -y \
 
 yum install -y \
     centos-release-scl \
-    rh-python37 \
+    rh-python27 \
     wget
 
 wget https://repo.anaconda.com/archive/Anaconda3-2019.10-Linux-x86_64.sh
