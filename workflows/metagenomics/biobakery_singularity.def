@@ -47,3 +47,12 @@ conda install -c biobakery humann2
 
 cd /usr/bin
 ln -s /opt/anaconda/bin/* .
+
+mkdir -p /opt/databases/humann2_dbs
+cd /opt/databases
+humann2_databases --download chocophlan full humann2_dbs
+humann2_databases --download uniref uniref50_ec_filtered_diamond humann2_dbs
+humann2_databases --download uniref uniref50_GO_filtered_rapsearch2 humann2_dbs
+humann2_databases --download uniref uniref50_diamond humann2_dbs
+humann2_databases --download uniref uniref90_ec_filtered_diamond humann2_dbs
+humann2_databases --download utility_mapping full humann2_dbs
