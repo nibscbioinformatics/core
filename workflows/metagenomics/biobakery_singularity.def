@@ -31,11 +31,16 @@ yum install -y \
 
 yum install -y \
     centos-release-scl \
-    rh-python27 \
     wget
 
-wget https://repo.anaconda.com/archive/Anaconda3-2019.10-Linux-x86_64.sh
-bash Anaconda3-2019.10-Linux-x86_64.sh -b -p /opt/anaconda
+yum install -y \
+    python27u \
+    python27u-libs \
+    python27u-devel \
+    python27u-pip
+
+wget https://repo.anaconda.com/archive/Anaconda2-2019.10-Linux-x86_64.sh
+bash Anaconda2-2019.10-Linux-x86_64.sh -b -p /opt/anaconda
 eval "$(/opt/anaconda/bin/conda shell.bash hook)"
 conda init
 
@@ -44,4 +49,4 @@ conda config --add channels bioconda
 conda config --add channels conda-forge
 conda config --add channels biobakery
 
-## conda install -c biobakery humann2
+conda install -c biobakery humann2
