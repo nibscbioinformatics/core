@@ -1,0 +1,51 @@
+---
+title: "scRNA-seq aggregation"
+author: "Pedro R"
+date: "14 January 2020"
+output:
+  html_document: default
+  df_print: paged
+params:
+  sample_paths: sample_paths
+  sample_names: sample_names
+  output_path: output_path
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Read arguments and loadings
+
+```{r loading}
+options(warn=-1)
+
+list_sample_paths = strsplit(params$sample_paths, split = ',')[[1]]
+list_sample_names = strsplit(params$sample_names, split = ',')[[1]]
+output_path = params$output_path
+
+library(Seurat)
+```
+
+## Create Seurat objects
+
+```{r create_objects}
+list_sample_objects = c()
+for (i in 1:length(list_sample_paths)) {
+  sample_data = Read10X(list_sample_paths[i])
+  sample_object = CreateSeuratObject(counts = sample_data, project = list_sample_names[i], min.cells = 3, min.features = 200)
+  list_sample_objects = c(list_sample_objects, sample_object)
+}
+```
+
+## Aggregate objects
+
+```{r aggregate}
+aggregated_samples <- merge(list_sample_objects[[1]], y = tail(list_sample_objects, -1), add.cell.ids = list_sample_names)
+```
+
+## Save file
+
+```{r save}
+save(aggregated_samples, file = paste(output_path, '/aggregated_object.RData', sep = ''))
+```

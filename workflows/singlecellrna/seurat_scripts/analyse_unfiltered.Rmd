@@ -1,0 +1,97 @@
+---
+title: "scRNA-seq analysis (Unfiltered)"
+author: "Pedro R"
+date: "14 January 2020"
+output:
+  html_document: default
+  df_print: paged
+params:
+  input_path: input_path
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Read arguments and loadings
+
+```{r loading}
+options(warn=-1)
+
+aggregated_path = params$input_path
+
+library(Seurat)
+library(dplyr)
+
+load(file = aggregated_path)
+```
+
+## Normalize with cell cycle effect removal
+
+```{r normalize}
+aggregated_samples = PercentageFeatureSet(aggregated_samples, pattern = "^MT-", col.name = "percent.mt")
+
+s.genes <- cc.genes.updated.2019$s.genes
+g2m.genes <- cc.genes.updated.2019$g2m.genes
+aggregated_samples <- CellCycleScoring(aggregated_samples, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
+aggregated_samples$CC.Difference <- aggregated_samples$S.Score - aggregated_samples$G2M.Score
+aggregated_samples = SCTransform(aggregated_samples, vars.to.regress = "CC.Difference", verbose = FALSE)
+
+aggregated_samples = RunPCA(aggregated_samples)
+```
+
+## Find principal components
+
+```{r components}
+aggregated_samples = JackStraw(aggregated_samples, num.replicate = 100, dims = 50, verbose = FALSE)
+aggregated_samples = ScoreJackStraw(aggregated_samples, dims = 1:50)
+jackstraw_pvalues = data.frame(aggregated_samples@reductions$pca@jackstraw$overall.p.values)
+
+for (i in 1:dim(jackstraw_pvalues)[1]) {
+  if (jackstraw_pvalues$Score[i] > 0.05) {
+    PC_number = i - 1
+    break
+  }
+}
+
+ElbowPlot(aggregated_samples, ndims = 50)
+JackStrawPlot(aggregated_samples, dims = 1:50)
+```
+
+## Clustering and visualize
+
+```{r clustering}
+aggregated_samples <- FindNeighbors(aggregated_samples, dims = 1:PC_number)
+aggregated_samples <- FindClusters(aggregated_samples)
+VlnPlot(aggregated_samples, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), group.by = 'orig.ident', ncol = 3, pt.size = 0)
+
+aggregated_samples <- RunTSNE(aggregated_samples, dims = 1:PC_number)
+aggregated_samples <- RunUMAP(aggregated_samples, dims = 1:PC_number)
+
+DimPlot(aggregated_samples, reduction = "pca", group.by = "orig.ident")
+DimPlot(aggregated_samples, reduction = "tsne", group.by = "orig.ident")
+DimPlot(aggregated_samples, reduction = "umap", group.by = "orig.ident")
+FeaturePlot(aggregated_samples, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"))
+```
+
+## Differential expression
+
+```{r differential_expression}
+Idents(object = aggregated_samples) <- "orig.ident"
+list_sample_names = as.vector(unique((aggregated_samples@active.ident)))
+for (sample in list_sample_names) {
+  markers <- FindMarkers(aggregated_samples, ident.1 = sample)
+  print(sample)
+  head(markers, n = 10)
+}
+
+aggregated_samples_markers = FindAllMarkers(aggregated_samples, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+top10 = aggregated_samples_markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
+DoHeatmap(aggregated_samples, features = top10$gene) + NoLegend()
+```
+
+## Save file
+
+```{r saving}
+save(aggregated_samples, file = "aggregated_object_analyzed_unfiltered.RData")
+```
