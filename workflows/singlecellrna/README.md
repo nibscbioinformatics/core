@@ -16,6 +16,8 @@ In order to launch the analysis, you will need the following input files
 - 10X CellRanger reference: the path to downloaded and unzipped references from 10X you would like to use
 - Path to an output folder, where the results will be stored
 
+All paths should be specified as **absolute paths**.
+
 
 ## Testing the pipeline
 
@@ -42,8 +44,10 @@ run ~/CODE/core/workflows/singlecellrna/scrna_short.nf \
 --reference /path/to/GRCh38/cellranger/refdata-cellranger-GRCh38-3.0.0 \
 --output_dir /path/to/your/destination
 ```
-Note that the **singularity image** has been created and stored into our system, and the path is specified in the config file.
+**Note**:
+the **singularity image** has been created and stored into our system, and the path is specified in the config file.
 You can create the image by using the image definition available under this folder **scRNA_image.def**.
+The config file also specifies a mount point as */usr/share*: you will need to change that, if you want to mount other locations in your cluster.
 
 ## Running the pipeline
 
