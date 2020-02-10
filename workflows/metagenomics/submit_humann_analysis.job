@@ -12,7 +12,12 @@ results_folder=$3
 
 cd ${output_folder}
 
+inputFileName=`echo $input_file | awk -F/ '{print $NF}'`
+inputFolder=${input_file%${inputFileName}}
+
 singularity exec \
+-B ${inputFolder} \
+-B ${output_folder} \
 /usr/share/sequencing/singularity_images/biobakery_dbs.sif \
 humann2 \
 --input ${input_file} \
