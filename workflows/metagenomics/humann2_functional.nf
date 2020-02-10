@@ -33,7 +33,7 @@ log.info """\
 
         PARAMETERS RECEIVED:
         --------------------------------
-        READS FOLDER: ${params.metadata}
+        READS FOLDER: ${params.reads}
         OUTPUT FOLDER ${params.output_dir}
         """
         .stripIndent()
