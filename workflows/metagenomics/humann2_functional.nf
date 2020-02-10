@@ -78,8 +78,8 @@ process characteriseReads {
 
   output:
   file("${sampleId}/*.tsv")
-  file("${sampleId}_humann2_temp/${sampleId}_metaphlan_bowtie2.txt")
-  file("${sampleId}_humann2_temp/${sampleId}_metaphlan_bugs_list.tsv")
+  file("${sampleId}_concat_humann2_temp/${sampleId}_concat_metaphlan_bowtie2.txt")
+  file("${sampleId}_concat_humann2_temp/${sampleId}_concat_metaphlan_bugs_list.tsv")
 
   script:
 
