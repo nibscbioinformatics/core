@@ -77,7 +77,9 @@ process characteriseReads {
   set sampleId, file(reads) from samples_ch
 
   output:
-  file("${sampleId}/*.tsv")
+  file("${sampleId}/*genefamilies.tsv") into gene_families_ch
+  file("${sampleId}/*pathabundance.tsv") into path_abundance_ch
+  file("${sampleId}/*pathcoverage.tsv")
   file("${sampleId}/${sampleId}_concat_humann2_temp/${sampleId}_concat_metaphlan_bowtie2.txt")
   file("${sampleId}/${sampleId}_concat_humann2_temp/${sampleId}_concat_metaphlan_bugs_list.tsv")
 
@@ -90,6 +92,71 @@ process characteriseReads {
   --input ${sampleId}_concat.fastq.gz \
   --output ${sampleId} \
   --threads ${task.cpus}
+  """
+}
+
+
+process joinGenes {
+
+  tag "humann2 join genes"
+  cpus 1
+  queue 'WORK'
+  time '1h'
+  memory '6 GB'
+  containerOptions = "-B ${params.reads} -B ${params.output_dir} -B $PWD"
+
+  input:
+  file genetables from gene_families_ch.collect()
+
+  output:
+  file("joined_genefamilies.tsv")
+  file("joined_genefamilies_renorm_cpm.tsv")
+
+  script:
+  """
+  humann2_join_tables \
+  -i ./ \
+  -o joined_genefamilies.tsv \
+  --file_name genefamilies
+
+  humann2_renorm_table \
+  -i joined_genefamilies.tsv \
+  -o joined_genefamilies_renorm_cpm.tsv \
+  --units cpm
+
+  """
+
+}
+
+
+process joinPathways {
+
+  tag "humann2 join pathways"
+  cpus 1
+  queue 'WORK'
+  time '1h'
+  memory '6 GB'
+  containerOptions = "-B ${params.reads} -B ${params.output_dir} -B $PWD"
+
+  input:
+  file pathtables from path_abundance_ch.collect()
+
+  output:
+  file("joined_pathabundance.tsv")
+  file("joined_pathabundance_renorm_cpm.tsv")
+
+  script:
+  """
+  humann2_join_tables \
+  -i ./ \
+  -o joined_pathabundance.tsv \
+  --file_name pathabundance
+
+  humann2_renorm_table \
+  -i joined_pathabundance.tsv \
+  -o joined_pathabundance_renorm_cpm.tsv \
+  --units cpm
+
   """
 
 }
