@@ -1,18 +1,46 @@
 # Metagenomics Analyses
 
-[to be completed]
+The code included in this folder performs different metagenomics analyses, as described in the paragraphs below.
+
+## Taxonomic Profiling with Kraken
+
+### Nextflow Pipeline
 
 
 
 
-## Humann2 Analysis
+
+## Taxonomic and Functional Profiling with Metaphlan and Humann2
 
 The following paragraphs will briefly explain how to run Humann2, using the scripts we have prepared.
 
 
 ### Nextflow Pipeline
 
-[ to be completed ]
+Our Nextflow pipeline launches Humann2 on all the fastq read pairs present in a specified input folder: the pipeline performs a three tiered analysis as described in Humann2 paper.
+
+Expected inputs:
+
+- an input folder where all read pairs for all samples are located
+- an output folder where new sample folders will be created and joined tables will be copied
+
+The outputs will include:
+
+- Metaphlan taxonomic profiling for each sample
+- Abundance tables for genes and pathways for each sample
+- Joined gene and pathways abundance tables
+- Joined gene and pathways abundance tables, re-normalised in cpm
+
+In order to run the Nextflow pipeline, the user will submit a batch job running the master Nextflow script, as follows:
+
+```
+sbatch \
+-D `pwd` \
+-o "`pwd`/nextflow_metafunctional_job_%j.out" \
+~/CODE/core/workflows/metagenomics/run_nextflow_humann2.job \
+/path/to/project/inputs_folder \
+/path/to/project/outputs_folder
+```
 
 
 
