@@ -171,7 +171,7 @@ workflow.onComplete {
     log.info("\nDone! Workflow completed\n")
     log.info("Removing all intermediate files now\n")
     log.info("Removing ${workflow.workDir}\n")
-    log.info("Removing ${workflow.projectDir}\n")
+    log.info("Removing ${workflow.launchDir}\n")
   }
   else {
     log.info("Oops .. something went wrong\n")
