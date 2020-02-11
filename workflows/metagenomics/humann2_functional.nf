@@ -169,6 +169,7 @@ workflow.onComplete {
 
   if( workflow.success ) {
     log.info("\nDone! Workflow completed\n")
+    log.info("Removing all intermediate files now\n")
   }
   else {
     log.info("Oops .. something went wrong\n")
