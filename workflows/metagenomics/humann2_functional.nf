@@ -105,6 +105,8 @@ process joinGenes {
   memory '6 GB'
   containerOptions = "-B ${params.reads} -B ${params.output_dir} -B $PWD"
 
+  publishDir "${params.output_dir}", mode: 'copy'
+
   input:
   file genetables from gene_families_ch.collect()
 
@@ -137,6 +139,8 @@ process joinPathways {
   time '1h'
   memory '6 GB'
   containerOptions = "-B ${params.reads} -B ${params.output_dir} -B $PWD"
+
+  publishDir "${params.output_dir}", mode: 'copy'
 
   input:
   file pathtables from path_abundance_ch.collect()
