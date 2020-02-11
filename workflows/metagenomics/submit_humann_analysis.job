@@ -1,0 +1,24 @@
+#!/bin/bash
+#SBATCH -N 1
+#SBATCH -c 4
+#SBATCH --mem=32g
+#SBATCH -t 1-00:00:00
+#SBATCH --job-name Humann2
+
+
+input_file=$1
+output_folder=$2
+results_folder=$3
+
+cd ${output_folder}
+
+inputFileName=`echo $input_file | awk -F/ '{print $NF}'`
+inputFolder=${input_file%${inputFileName}}
+
+singularity exec \
+-B ${inputFolder} \
+-B ${output_folder} \
+/usr/share/sequencing/singularity_images/biobakery_dbs.sif \
+humann2 \
+--input ${input_file} \
+--output ${results_folder}
