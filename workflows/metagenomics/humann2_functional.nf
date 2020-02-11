@@ -164,3 +164,14 @@ process joinPathways {
   """
 
 }
+
+workflow.onComplete {
+
+  if( workflow.success ) {
+    log.info("\nDone! Workflow completed\n")
+  }
+  else {
+    log.info("Oops .. something went wrong\n")
+    log.info("Pipeline execution stopped with the following message: ${workflow.errorMessage}")
+  }
+}
