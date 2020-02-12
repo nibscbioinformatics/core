@@ -67,7 +67,7 @@ process characteriseReads {
   tag "humann2 $sampleId"
   cpus 8
   queue 'WORK'
-  time '12h'
+  time '48h'
   memory '32 GB'
   containerOptions = "-B ${params.reads} -B ${params.output_dir}"
 
@@ -101,7 +101,7 @@ process joinGenes {
   tag "humann2 join genes"
   cpus 1
   queue 'WORK'
-  time '1h'
+  time '6h'
   memory '6 GB'
   containerOptions = "-B ${params.reads} -B ${params.output_dir} -B $PWD"
 
@@ -136,7 +136,7 @@ process joinPathways {
   tag "humann2 join pathways"
   cpus 1
   queue 'WORK'
-  time '1h'
+  time '6h'
   memory '6 GB'
   containerOptions = "-B ${params.reads} -B ${params.output_dir} -B $PWD"
 
