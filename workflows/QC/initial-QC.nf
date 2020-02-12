@@ -111,7 +111,7 @@ process reversesets {
 if (params.mergelanes) {
   readschannel = forwardsets.join(reversesets)
 } else {
-  filepattern = params.indir + "/*{_L001_R1_001,_L001_R2_001}.fastq.gz"
+  filepattern = params.indir + "/*{_R1,_R2}*.fastq.gz"
   Channel.fromFilePairs(filepattern, flat: true).set{readschannel}
 }
 
