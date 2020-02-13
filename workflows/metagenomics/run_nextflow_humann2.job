@@ -2,7 +2,7 @@
 #SBATCH -N 1
 #SBATCH -c 1
 #SBATCH --mem=5g
-#SBATCH -t 1-00:00:00
+#SBATCH -t 5-00:00:00
 #SBATCH --job-name NFmaster
 
 reads=$1

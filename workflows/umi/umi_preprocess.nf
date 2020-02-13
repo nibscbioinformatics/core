@@ -92,7 +92,6 @@ process FastqToBAM {
   mkdir tmpFolder
 
   fgbio FastqToBam \
-  --tmp-dir=\$PWD/tmpFolder \
   -i $reads \
   -o "${sampleId}_converted.bam" \
   --read-structures $params.read_structure1 $params.read_structure2 \
@@ -179,9 +178,11 @@ process AlignBamFile {
   script:
   """
   module load BWA/latest
-  bwa mem -t ${params.cpus} -M -R '@RG\\tID:${sampleId}\\tSM:${sampleId}\\tPL:Illumina' \
-  ${params.reference} \
-  ${convertedBam} > ${sampleId}.unsorted.sam
+  module load SAMTools/1.10
+  samtools bam2fq -T RX ${convertedBam} | \
+  bwa mem -t ${task.cpus} -C -M -R \"@RG\\tID:${sampleId}\\tSM:${sampleId}\\tPL:Illumina\" \
+  ${params.reference} - | \
+  samtools view -bS - > ${sampleId}_unsorted.bam
   """
 
 }
@@ -212,7 +213,7 @@ process GroupReadsByUmi {
   mkdir tmpFolder
 
   fgbio GroupReadsByUmi \
-  --tmp-dir=\$PWD/tmpFolder \
+
 
   """
 
