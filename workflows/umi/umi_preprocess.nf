@@ -73,7 +73,7 @@ process FastqToBAM {
   tag "ConvertToBAM"
   cpus 1
   queue 'WORK'
-  time '2h'
+  time '12h'
   memory '6 GB'
 
   // no publish dir, meaning all files are temporary
@@ -91,7 +91,8 @@ process FastqToBAM {
   module load fgbio/1.1.0
   mkdir tmpFolder
 
-  fgbio FastqToBam \
+  fgbio --tmp-dir=${PWD}/tmpFolder \
+  FastqToBam \
   -i $reads \
   -o "${sampleId}_converted.bam" \
   --read-structures $params.read_structure1 $params.read_structure2 \
@@ -100,40 +101,6 @@ process FastqToBAM {
   """
 
 }
-
-// the below might not be necessary because the correct
-// bam file is created by the above
-// but could be used if we already have an unmapped bam
-// containing UMIs within the reads
-//
-// process ExtractUmisFromBam {
-//
-//   tag "tag UMIs"
-//   cpus 1
-//   queue 'WORK'
-//   time '2h'
-//   memory '6 GB'
-//
-//   input:
-//   set sampleId, file(convertedBam) from converted_bams_ch
-//
-//   output:
-//   tuple val(sampleId), file("${sampleId}_tagged.bam") into tagged_bams_ch
-//
-//   script:
-//   """
-//   module load fgbio/1.1.0
-//   mkdir tmpFolder
-//
-//   fgbio ExtractUmisFromBam \
-//   -i $convertedBam \
-//   -o "${convertedBam.baseName}_tagged.bam" \
-//   -r $params.read_structure1 $params.read_structure2 \
-//   --tmp-dir=\$PWD/tmpFolder
-//   """
-//
-// }
-
 
 // now we need to see how we can do that because the reads are now
 // in a BAM format, unmapped
@@ -163,22 +130,27 @@ process FastqToBAM {
 process AlignBamFile {
 
   tag "BWA alignment"
-  cpus 1
+  cpus 8
   queue 'WORK'
-  time '2h'
-  memory '6 GB'
+  time '24h'
+  memory '24 GB'
+
+  // no publish dir, meaning all files are temporary
+  // and will be stored in work directory until deletion
+  // because in this case the aligned bam file is still UMI tagged
 
   input:
   set sampleId, file(convertedBam) from converted_bams_ch
 
   output:
-  tuple val(sampleId), file("${sampleId}_converted.bam") into converted_bams_ch
+  tuple val(sampleId), file("${sampleId}_unsorted.bam") into aligned_bams_ch
 
 
   script:
   """
   module load BWA/latest
   module load SAMTools/1.10
+
   samtools bam2fq -T RX ${convertedBam} | \
   bwa mem -t ${task.cpus} -C -M -R \"@RG\\tID:${sampleId}\\tSM:${sampleId}\\tPL:Illumina\" \
   ${params.reference} - | \
@@ -187,71 +159,103 @@ process AlignBamFile {
 
 }
 
+// now that the reads are aligned, we can group them by UMI as important preliminary step
+// to create the consensus
+// one thing is still missing though, which is required by GroupReadsByUmi
+// and is the mandatory presence of the MQ tag, informing of the mapping quality of the read mate pair
+// this information is essential for the aggressive filtering the tool does, i.e. making sure that
+// the UMI reads actually come from the same molecule of origin
 
-
-
+// We have chose the Adjacency method, following the nice paper and blog explanation integrated in both
+// UMItools and FGBIO
+// https://cgatoxford.wordpress.com/2015/08/14/unique-molecular-identifiers-the-problem-the-solution-and-the-proof/
 
 process GroupReadsByUmi {
 
   tag "group UMIs"
   cpus 1
   queue 'WORK'
-  time '2h'
-  memory '6 GB'
+  time '12h'
+  memory '8 GB'
+
+  // no publish dir, meaning all files are temporary
+  // and will be stored in work directory until deletion
 
   input:
-  set sampleId, file(taggedBam) from tagged_bams_ch
+  set sampleId, file(alignedBam) from aligned_bams_ch
 
   output:
-  file(XXXX) into counts_ch
-  file(YYYY) into alignments_ch
-  file(ZZZZ) into reports_ch
+  file("${sampleId}_umi_histogram.txt") into umi_histogram_ch
+  tuple val(sampleId), file("${sampleId}_umi-grouped.bam") into umi_grouped_bams_ch
 
   script:
   """
   module load fgbio/1.1.0
+  module load samblaster/0.1.24
+  module load SAMTools/1.10
+
   mkdir tmpFolder
 
-  fgbio GroupReadsByUmi \
+  samtools view -h $alignedBam | \
+  samblaster -M --addMateTags | \
+  samtools view -Sb - >${sampleId}_unsorted_tagged.bam
 
-
+  fgbio --tmp-dir=${PWD}/tmpFolder \
+  GroupReadsByUmi \
+  -s Adjacency \
+  -i ${sampleId}_unsorted_tagged.bam \
+  -o ${sampleId}_umi-grouped.bam \
+  -f ${sampleId}_umi_histogram.txt
   """
 
 }
 
-
+// Now that the reads are organised by UMI groups
 
 process CallMolecularConsensusReads {
 
   tag "XXXXXXXX"
   cpus 1
   queue 'WORK'
-  time '2h'
-  memory '6 GB'
+  time '12h'
+  memory '8 GB'
 
-  publishDir "$params.output_dir/tmpBam", mode: 'copy'
+  publishDir "$params.output_dir", mode: 'copy'
 
   input:
-  set sampleId, val(sampleFolder) from samples_ch
+  set sampleId, file(groupedBamFile) from umi_grouped_bams_ch
 
   output:
-  file(XXXX) into counts_ch
-  file(YYYY) into alignments_ch
-  file(ZZZZ) into reports_ch
+  file("${sampleId}_umi-consensus.bam") into consensus_bam_ch
 
   script:
   """
   module load fgbio/1.1.0
   mkdir tmpFolder
 
-  --tmp-dir=\$PWD/tmpFolder \
+  fgbio --tmp-dir=${PWD}/tmpFolder \
+  CallMolecularConsensusReads \
+  -i $groupedBamFile \
+  -o ${sampleId}_umi-consensus.bam \
+  -M 1 -S Coordinate
   """
 
 }
 
 
-
-
 workflow.onComplete {
-	log.info ( workflow.success ? "\nDone! Workflow completed\n" : "Oops .. something went wrong\n" )
+
+  if( workflow.success ) {
+    log.info("\nDone! Workflow completed\n")
+    log.info("Removing all intermediate files now\n")
+    log.info("Removing ${workflow.workDir}\n")
+    deleteWork = workflow.workDir.deleteDir()
+    log.info("Removing ${workflow.launchDir}/.nextflow/\n")
+    mycache = file("${workflow.launchDir}/.nextflow")
+    deleteCache = mycache.deleteDir()
+  }
+  else {
+    log.info("Oops .. something went wrong\n")
+    log.info("Pipeline execution stopped with the following message: ${workflow.errorMessage}")
+  }
 }
