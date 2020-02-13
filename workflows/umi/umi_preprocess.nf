@@ -178,8 +178,10 @@ process GroupReadsByUmi {
   time '12h'
   memory '8 GB'
 
-  // no publish dir, meaning all files are temporary
-  // and will be stored in work directory until deletion
+  // saving this both to save the statistics of the UMI groups
+  // as well as to keep the grouped file before consensus, should we want
+  // to change the parameters of consensus creation
+  publishDir "${params.output_dir}/${sampleId}", mode: 'copy'
 
   input:
   set sampleId, file(alignedBam) from aligned_bams_ch
@@ -220,7 +222,7 @@ process CallMolecularConsensusReads {
   time '12h'
   memory '8 GB'
 
-  publishDir "$params.output_dir", mode: 'copy'
+  publishDir "${params.output_dir}/${sampleId}", mode: 'copy'
 
   input:
   set sampleId, file(groupedBamFile) from umi_grouped_bams_ch
