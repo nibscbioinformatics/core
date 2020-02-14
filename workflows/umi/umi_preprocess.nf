@@ -152,7 +152,7 @@ process AlignBamFile {
   module load SAMTools/1.10
 
   samtools bam2fq -T RX ${convertedBam} | \
-  bwa mem -t ${task.cpus} -C -M -R \"@RG\\tID:${sampleId}\\tSM:${sampleId}\\tPL:Illumina\" \
+  bwa mem -p -t ${task.cpus} -C -M -R \"@RG\\tID:${sampleId}\\tSM:${sampleId}\\tPL:Illumina\" \
   ${params.reference} - | \
   samtools view -bS - > ${sampleId}_unsorted.bam
   """
