@@ -19,8 +19,8 @@ run ~/CODE/core/workflows/umi/umi_preprocess.nf \
 -with-trace \
 -with-timeline nf_umi-consensus_timeline.htm \
 -with-report nf_umi-consensus_report.htm \
---reads /usr/share/sequencing/projects/307/raw_data \
---reference /usr/share/sequencing/references/homo_sapiens/hg19/gatk_references/hg19_v0_Homo_sapiens_assembly19.fasta \
---output_dir /usr/share/sequencing/projects/307/analysis/test_nextflow \
---read_structure1 7M1S+T \
---read_structure2 7M1S+T
+--reads $reads \
+--reference $reference \
+--output_dir $output \
+--read_structure1 $structure1 \
+--read_structure2 $structure2
