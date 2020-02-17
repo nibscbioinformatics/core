@@ -55,7 +55,8 @@ if (params.help)
 }
 
 // initialisation of parameters before passed by command line or config file
-
+params.bams = null
+params.fastqs = null
 params.output_dir     = "."
 
 if (params.fastqs) {
@@ -63,14 +64,12 @@ if (params.fastqs) {
       .fromFilePairs("$params.fastqs/*_{R1,R2}*.fastq.gz,")
       .ifEmpty { error "Cannot find any reads matching ${params.fastqs}"}
       .set { samples_ch }
-  params.bams = null
 }
 if (params.bams) {
   Channel
-      .fromFilePairs("$params.bams/*.bam")
+      .fromPath("$params.bams/*.bam")
       .ifEmpty { error "Cannot find any file matching ${params.bams}"}
       .set { samples_ch }
-  params.fastqs = null
 }
 else {
   error "you have not specified any input parameters"
