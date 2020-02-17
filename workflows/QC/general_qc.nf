@@ -33,7 +33,8 @@ log.info """\
 
         PARAMETERS RECEIVED:
         --------------------------------
-        READS FOLDER: ${params.reads}
+        READS FOLDER: ${params.fastqs}
+        BAMS FOLDER: ${params.bams}
         OUTPUT FOLDER ${params.output_dir}
         """
         .stripIndent()
@@ -47,20 +48,33 @@ if (params.help)
     log.info "nextflow run nibsbioinformatics/core/workflows/QC/general_qc.nf [OPTIONS]"
     log.info ""
     log.info "Mandatory arguments:"
-    log.info "--reads                         READS FOLDER              Folder where paired end fastq reads or bam files are located"
-    log.info "--output_dir                    OUTPUT FOLDER             Folder where output reports and data will be copied"
+    log.info "--fastqs                       FASTQ FOLDER              Folder where paired end fastq reads files are located"
+    log.info "--bams                         BAMS FOLDER               Folder where bam files are located"
+    log.info "--output_dir                   OUTPUT FOLDER             Folder where output reports and data will be copied"
     exit 1
 }
 
 // initialisation of parameters before passed by command line or config file
 
-params.reads          = null
 params.output_dir     = "."
 
-Channel
-    .fromFilePairs("$params.reads/{*_{R1,R2}*.fastq.gz,*.bam}")
-    .ifEmpty { error "Cannot find any reads matching ${params.reads}"}
-    .set { samples_ch }
+if (params.fastqs) {
+  Channel
+      .fromFilePairs("$params.fastqs/*_{R1,R2}*.fastq.gz,")
+      .ifEmpty { error "Cannot find any reads matching ${params.fastqs}"}
+      .set { samples_ch }
+  params.bams = null
+}
+if (params.bams) {
+  Channel
+      .fromFilePairs("$params.bams/*.bam")
+      .ifEmpty { error "Cannot find any file matching ${params.bams}"}
+      .set { samples_ch }
+  params.fastqs = null
+}
+else {
+  error "you have not specified any input parameters"
+}
 
 
 process dofastqc {
