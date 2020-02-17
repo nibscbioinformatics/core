@@ -64,12 +64,14 @@ if (params.fastqs) {
       .fromFilePairs("$params.fastqs/*_{R1,R2}*.fastq.gz,")
       .ifEmpty { error "Cannot find any reads matching ${params.fastqs}"}
       .set { samples_ch }
+  mode = 'fastq'
 }
 if (params.bams) {
   Channel
       .fromPath("$params.bams/*.bam")
       .ifEmpty { error "Cannot find any file matching ${params.bams}"}
       .set { samples_ch }
+  mode = 'bam'
 }
 else {
   error "you have not specified any input parameters"
@@ -77,27 +79,35 @@ else {
 
 
 process dofastqc {
-  publishDir "$params.qcdir", mode: "copy"
+  publishDir "$params.output_dir", mode: "copy"
   cpus 1
   queue 'WORK'
   time '8h'
   memory '10 GB'
 
   input:
-  set val(sampleId), file(reads) from samples_ch
+  file(reads) from samples_ch
 
   output:
   file "*_fastqc.{zip,html}" into fastqcout_ch
 
-  """
-  module load FastQC/latest
-  fastqc $reads
-  """
+  script:
+  if( mode == 'fastq' )
+      """
+      module load FastQC/latest
+      fastqc $reads[0]
+      fastqc $reads[1]
+      """
+  else if( mode == 'bam' )
+      """
+      module load FastQC/latest
+      fastqc $reads
+      """
 }
 
 
 process domultiqc {
-  publishDir "$params.qcdir", mode: "copy"
+  publishDir "$params.output_dir", mode: "copy"
   cpus 8
   queue 'WORK'
   time '8h'
