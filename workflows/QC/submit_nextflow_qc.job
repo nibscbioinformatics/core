@@ -1,0 +1,20 @@
+#!/bin/bash
+#SBATCH -N 1
+#SBATCH -c 1
+#SBATCH --mem=5g
+#SBATCH -t 5-00:00:00
+#SBATCH --job-name NFmaster
+
+reads=$1
+output=$2
+
+module load NextFlow/19.10.0
+
+nextflow \
+-c ~/CODE/core/workflows/QC/nextflow.config \
+run ~/CODE/core/workflows/QC/initial-QC.nf \
+-with-trace \
+-with-timeline nf_QC_timeline.htm \
+-with-report nf_QC_report.htm \
+--indir $reads \
+--qcdir $output
