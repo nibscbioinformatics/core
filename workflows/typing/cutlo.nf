@@ -60,7 +60,7 @@ process dotrimlog {
   script:
   """
   module load anaconda/Py2/python2
-  python /home/AD/tbleazar/pipelines/trimlogger.py logdir read-summary.csv
+  python $HOME/CODE/core/utilities/trimlogger.py logdir read-summary.csv
   """
 }
 
@@ -207,6 +207,23 @@ process dodepth {
   """
 }
 
+process makevartable {
+  publishDir "$params.outdir/analysis", mode: "copy"
+  cpus 1
+  queue 'WORK'
+  time '12h'
+  memory '24 GB'
 
+  input:
+  set ( sampleprefix, file(lofreqout) ) from finishedcalls
+
+  output:
+  set ( sampleprefix, file("${sampleprefix}-variants.csv") ) into nicetable
+
+  """
+  module load anaconda/Py2/python2
+  python $HOME/CODE/core/utilities/tablefromvcf.py $lofreqout ${sampleprefix}-variants.csv
+  """
+}
 
 

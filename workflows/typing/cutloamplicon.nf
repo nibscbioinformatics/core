@@ -3,7 +3,7 @@
 //Performs basic cutadapt trimming, then alignment with bwa, then variant calling with lofreq, without marking duplicates or lofreq filters for amplicon sequencing
 
 params.filepattern = "/usr/share/sequencing/miseq/output/161007_M01745_0131_000000000-ATN6R/Data/Intensities/BaseCalls/049*{_L001_R1_001,_L001_R2_001}.fastq.gz"
-params.adapterfile = "/home/AD/tbleazar/usrlocalmark/NexteraPE-PE.fa"
+params.adapterfile = "/usr/share/sequencing/references/adapters/NexteraPE-PE.fa"
 params.outdir = "/home/AD/tbleazar/test"
 params.referencefolder = "/usr/share/sequencing/projects/049/input/reference/" //and it is required that this have an indexed genome already
 params.referencefile = "AY184219.fasta"
