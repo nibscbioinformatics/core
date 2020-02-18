@@ -17,4 +17,5 @@ run ~/CODE/core/workflows/metagenomics/humann2_functional.nf \
 -with-timeline nf_metatest_timeline.htm \
 -with-report nf_metatest_report.htm \
 --reads ${reads} \
---output_dir ${output}
+--output_dir ${output} \
+-resume

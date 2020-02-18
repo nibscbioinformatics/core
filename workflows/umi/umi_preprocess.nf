@@ -152,7 +152,7 @@ process AlignBamFile {
   module load SAMTools/1.10
 
   samtools bam2fq -T RX ${convertedBam} | \
-  bwa mem -t ${task.cpus} -C -M -R \"@RG\\tID:${sampleId}\\tSM:${sampleId}\\tPL:Illumina\" \
+  bwa mem -p -t ${task.cpus} -C -M -R \"@RG\\tID:${sampleId}\\tSM:${sampleId}\\tPL:Illumina\" \
   ${params.reference} - | \
   samtools view -bS - > ${sampleId}_unsorted.bam
   """
@@ -245,25 +245,20 @@ process CallMolecularConsensusReads {
 }
 
 
-// disabling workflow completion to keep data for debugging
 
 workflow.onComplete {
-	log.info ( workflow.success ? "\nDone! Workflow completed\n" : "Oops .. something went wrong\n" )
+
+  if( workflow.success ) {
+    log.info("\nDone! Workflow completed\n")
+    log.info("Removing all intermediate files now\n")
+    log.info("Removing ${workflow.workDir}\n")
+    deleteWork = workflow.workDir.deleteDir()
+    log.info("Removing ${workflow.launchDir}/.nextflow/\n")
+    mycache = file("${workflow.launchDir}/.nextflow")
+    deleteCache = mycache.deleteDir()
+  }
+  else {
+    log.info("Oops .. something went wrong\n")
+    log.info("Pipeline execution stopped with the following message: ${workflow.errorMessage}")
+  }
 }
-//
-// workflow.onComplete {
-//
-//   if( workflow.success ) {
-//     log.info("\nDone! Workflow completed\n")
-//     log.info("Removing all intermediate files now\n")
-//     log.info("Removing ${workflow.workDir}\n")
-//     deleteWork = workflow.workDir.deleteDir()
-//     log.info("Removing ${workflow.launchDir}/.nextflow/\n")
-//     mycache = file("${workflow.launchDir}/.nextflow")
-//     deleteCache = mycache.deleteDir()
-//   }
-//   else {
-//     log.info("Oops .. something went wrong\n")
-//     log.info("Pipeline execution stopped with the following message: ${workflow.errorMessage}")
-//   }
-// }

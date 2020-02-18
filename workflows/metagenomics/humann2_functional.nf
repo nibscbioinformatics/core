@@ -67,7 +67,7 @@ process characteriseReads {
   tag "humann2 $sampleId"
   cpus 8
   queue 'WORK'
-  time '72h'
+  time '360h'
   memory '32 GB'
   containerOptions = "-B ${params.reads} -B ${params.output_dir}"
 
@@ -165,19 +165,25 @@ process joinPathways {
 
 }
 
-workflow.onComplete {
+// keep in debugging mode, by maintaining /work directory
 
-  if( workflow.success ) {
-    log.info("\nDone! Workflow completed\n")
-    log.info("Removing all intermediate files now\n")
-    log.info("Removing ${workflow.workDir}\n")
-    deleteWork = workflow.workDir.deleteDir()
-    log.info("Removing ${workflow.launchDir}/.nextflow/\n")
-    mycache = file("${workflow.launchDir}/.nextflow")
-    deleteCache = mycache.deleteDir()
-  }
-  else {
-    log.info("Oops .. something went wrong\n")
-    log.info("Pipeline execution stopped with the following message: ${workflow.errorMessage}")
-  }
+// workflow.onComplete {
+//
+//   if( workflow.success ) {
+//     log.info("\nDone! Workflow completed\n")
+//     log.info("Removing all intermediate files now\n")
+//     log.info("Removing ${workflow.workDir}\n")
+//     deleteWork = workflow.workDir.deleteDir()
+//     log.info("Removing ${workflow.launchDir}/.nextflow/\n")
+//     mycache = file("${workflow.launchDir}/.nextflow")
+//     deleteCache = mycache.deleteDir()
+//   }
+//   else {
+//     log.info("Oops .. something went wrong\n")
+//     log.info("Pipeline execution stopped with the following message: ${workflow.errorMessage}")
+//   }
+// }
+
+workflow.onComplete {
+	log.info ( workflow.success ? "\nDone! Workflow completed\n" : "Oops .. something went wrong\n" )
 }
