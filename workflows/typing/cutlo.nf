@@ -60,7 +60,7 @@ process dotrimlog {
   script:
   """
   module load anaconda/Py2/python2
-  python $HOME/CODE/core/utilities/trimlogger.py logdir read-summary.csv
+  python $HOME/CODE/core/utilities/logger.py logdir read-summary.csv cutadapt
   """
 }
 
@@ -155,10 +155,12 @@ process samtoolsindex {
 
   output:
   set ( sampleprefix, file("${indelqualfile}.bai") ) into samindex
+  file("${sampleprefix}.flagstat.out") into flagstatouts
 
   """
   module load SAMTools/latest
   samtools index $indelqualfile
+  samtools flagstat $indelqualfile > ${sampleprefix}.flagstat.out
   """
 }
 
