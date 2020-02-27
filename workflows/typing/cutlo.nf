@@ -55,12 +55,12 @@ process dotrimlog {
   file "logdir/*" from trimouts.toSortedList()
 
   output:
-  file("read-summary.csv") into trimlogend
+  file("trimming-summary.csv") into trimlogend
 
   script:
   """
   module load anaconda/Py2/python2
-  python $HOME/CODE/core/utilities/logger.py logdir read-summary.csv cutadapt
+  python $HOME/CODE/core/utilities/logger.py logdir trimming-summary.csv cutadapt
   """
 }
 
@@ -161,6 +161,26 @@ process samtoolsindex {
   module load SAMTools/latest
   samtools index $indelqualfile
   samtools flagstat $indelqualfile > ${sampleprefix}.flagstat.out
+  """
+}
+
+process doalignmentlog {
+  publishDir "$params.outdir/analysis", mode: "copy"
+  cpus 1
+  queue 'WORK'
+  time '12h'
+  memory '4 GB'
+
+  input:
+  file "logdir/*" from flagstatouts.toSortedList()
+
+  output:
+  file("alignment-summary.csv") into alignmentlogend
+
+  script:
+  """
+  module load anaconda/Py2/python2
+  python $HOME/CODE/core/utilities/logger.py logdir alignment-summary.csv flagstat
   """
 }
 
