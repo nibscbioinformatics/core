@@ -231,5 +231,10 @@ process CreatePanelOfNormals {
   -V gendb://pon_db \
   -O pon.vcf.gz
   """
+}
 
+
+
+workflow.onComplete {
+	log.info ( workflow.success ? "\nDone! Workflow completed\n" : "Oops .. something went wrong\n" )
 }
