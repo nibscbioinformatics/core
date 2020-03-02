@@ -43,6 +43,7 @@ log.info """\
         --------------------------------
         READS FOLDER: ${params.fastqs}
         BAMS FOLDER: ${params.bams}
+        REALIGN THE BAMS? ${params.realign}
         REFERENCE: ${params.reference}
         GERMLINE RES: ${params.germline_resource}
         INTERVALS: ${params.intervals}
