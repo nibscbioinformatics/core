@@ -19,6 +19,7 @@
 
 // initialisation of parameters before passed by command line or config file
 params.bams = null
+params.realign = null
 params.fastqs = null
 params.output_dir     = "."
 params.reference = null
