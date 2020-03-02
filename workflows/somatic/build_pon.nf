@@ -21,6 +21,9 @@
 params.bams = null
 params.fastqs = null
 params.output_dir     = "."
+params.reference = null
+params.germline_resource = null
+params.intervals = null
 params.help = null
 
 log.info ""
@@ -57,7 +60,7 @@ if (params.help)
     log.info "Mandatory arguments:"
     log.info "--fastqs                       FASTQ FOLDER              Folder where paired end fastq reads files are located"
     log.info "--bams                         BAMS FOLDER               Folder where bam files are located"
-    log.info "--references                   FASTA reference           Fasta reference file"
+    log.info "--reference                   FASTA reference           Fasta reference file"
     log.info "--germline_resource            GERMLINE resource         Gnomad file AF-only VCF to be used as germline resource"
     log.info "--intervals                    INTERVALS list            BED file in case of capture (exome or panel)"
     log.info "--output_dir                   OUTPUT FOLDER             Folder where output reports and data will be copied"
