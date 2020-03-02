@@ -60,6 +60,7 @@ if (params.help)
     log.info "Mandatory arguments:"
     log.info "--fastqs                       FASTQ FOLDER              Folder where paired end fastq reads files are located"
     log.info "--bams                         BAMS FOLDER               Folder where bam files are located"
+    log.info "--realign                      BOOLEAN                   Use if you need to realign a bamfile input"
     log.info "--reference                   FASTA reference           Fasta reference file"
     log.info "--germline_resource            GERMLINE resource         Gnomad file AF-only VCF to be used as germline resource"
     log.info "--intervals                    INTERVALS list            BED file in case of capture (exome or panel)"
@@ -73,15 +74,20 @@ if (params.fastqs) {
       .fromFilePairs("$params.fastqs/*_{R1,R2}*.fastq.gz,")
       .ifEmpty { error "Cannot find any reads matching ${params.fastqs}"}
       .set { samples_ch }
-  mode = 'fastq'
 }
-if (params.bams) {
+if (params.bams && params.realign) {
+  Channel
+      .fromPath("$params.bams/*.bam")
+      .ifEmpty { error "Cannot find any file matching ${params.bams}"}
+      .map { file -> tuple(file.baseName, file) }
+      .set { bams_ch }
+}
+if (params.bams && !params.realign) {
   Channel
       .fromPath("$params.bams/*.bam")
       .ifEmpty { error "Cannot find any file matching ${params.bams}"}
       .map { file -> tuple(file.baseName, file) }
       .set { aligned_bams_ch }
-  mode = 'bam'
 }
 else {
   error "you have not specified any input parameters"
@@ -107,10 +113,7 @@ if (params.fastq) {
     set sampleId, file(reads) from samples_ch
 
     output:
-    file("${sampleId}_sorted.bam") into aligned_bams_ch
-
-    when:
-    mode == 'fastq'
+    tuple val(sampleId), file("${sampleId}_sorted.bam") into aligned_bams_ch
 
 
     script:
@@ -126,7 +129,41 @@ if (params.fastq) {
 
 }
 
+if (params.bams && params.realign) {
 
+  process realignBams {
+
+    tag "BWA alignment"
+    cpus 8
+    queue 'WORK'
+    time '24h'
+    memory '24 GB'
+
+    // no publish dir, meaning all files are temporary
+    // and will be stored in work directory until deletion
+    // because in this case the aligned bam file is still UMI tagged
+
+    input:
+    set sampleId, file(umappedBam) from bams_ch
+
+    output:
+    tuple val(sampleId), file("${sampleId}_sorted.bam") into aligned_bams_ch
+
+
+    script:
+    """
+    module load BWA/latest
+    module load SAMTools/1.10
+
+    samtools bam2fq -T RX ${umappedBam} | \
+    bwa mem -p -t ${task.cpus} -C -M -R \"@RG\\tID:${sampleId}\\tSM:${sampleId}\\tPL:Illumina\" \
+    ${params.reference} - | \
+    samtools sort -@ ${task.cpus} -o ${sampleId}_sorted.bam -
+    """
+
+  }
+
+}
 
 
 // in the following process we call the VCF file of each sample
