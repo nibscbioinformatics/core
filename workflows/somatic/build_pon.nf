@@ -73,6 +73,7 @@ if (params.fastqs) {
       .fromFilePairs("$params.fastqs/*_{R1,R2}*.fastq.gz,")
       .ifEmpty { error "Cannot find any reads matching ${params.fastqs}"}
       .set { samples_ch }
+  mode = 'fastq'
 }
 if (params.bams) {
   Channel
@@ -80,6 +81,7 @@ if (params.bams) {
       .ifEmpty { error "Cannot find any file matching ${params.bams}"}
       .map { file -> tuple(file.baseName, file) }
       .set { aligned_bams_ch }
+  mode = 'bam'
 }
 else {
   error "you have not specified any input parameters"
@@ -106,7 +108,7 @@ process AlignSamples {
   file("${sampleId}_sorted.bam") into aligned_bams_ch
 
   when:
-  params.fastqs
+  mode == 'fastq'
 
 
   script:
