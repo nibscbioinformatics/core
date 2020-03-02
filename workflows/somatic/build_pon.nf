@@ -281,6 +281,7 @@ process CreatePanelOfNormals {
 
   output:
   file("pon.vcf.gz")
+  file("pon.vcf.gz.tbi")
 
   script:
   """
