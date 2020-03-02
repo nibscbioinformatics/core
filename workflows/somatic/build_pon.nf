@@ -195,7 +195,8 @@ process CreatTumorOnlyCalls {
   set sampleName, file(bamfile) from aligned_bams_ch
 
   output:
-  tuple file("${sampleName}_normal.vcf.gz"), file("${sampleName}_normal.vcf.gz.tbi") into vcf_ch
+  file("${sampleName}_normal.vcf.gz") into vcf_ch
+  file("${sampleName}_normal.vcf.gz.tbi") into vcfindex_ch
   file("${bamfile}.bai")
 
   script:
@@ -232,15 +233,15 @@ process GenomicsDB {
   publishDir "${params.output_dir}", mode: 'copy'
 
   input:
-  file(vcfdata) from vcf_ch.collect()
+  file(vcfs) from vcf_ch.collect()
+  file(vcfindexes) from vcfindex_ch.collect()
 
   output:
   file("pon_db") into pondb_ch
 
   script:
   vcfList = []
-  indexList = []
-  vcfdata.each() { a -> vcfList.add("-V " + a); b -> indexList.add(b) }
+  vcfs.each() { a -> vcfList.add("-V " + a) }
   inputVcfs = vcfList.join(" ")
   intervalsCommand = ""
   if (params.intervals) {
