@@ -91,37 +91,42 @@ else {
 // In case we don't already have alignments, we can just select the samples and
 // align the fastq to be used for the creation of the PON
 
+if (params.fastq) {
 
-process AlignSamples {
+  process AlignSamples {
 
-  tag "BWA alignment"
-  cpus 8
-  queue 'WORK'
-  time '24h'
-  memory '24 GB'
+    tag "BWA alignment"
+    cpus 8
+    queue 'WORK'
+    time '24h'
+    memory '24 GB'
 
-  publishDir "${params.output_dir}/${sampleId}", mode: 'copy'
+    publishDir "${params.output_dir}/${sampleId}", mode: 'copy'
 
-  input:
-  set sampleId, file(reads) from samples_ch
+    input:
+    set sampleId, file(reads) from samples_ch
 
-  output:
-  file("${sampleId}_sorted.bam") into aligned_bams_ch
+    output:
+    file("${sampleId}_sorted.bam") into aligned_bams_ch
 
-  when:
-  mode == 'fastq'
+    when:
+    mode == 'fastq'
 
 
-  script:
-  """
-  module load BWA/latest
-  module load SAMTools/1.10
+    script:
+    """
+    module load BWA/latest
+    module load SAMTools/1.10
 
-  bwa mem -t ${task.cpus} -M -R \"@RG\\tID:${sampleId}\\tSM:${sampleId}\\tPL:Illumina\" \
-  ${params.reference} ${reads} | \
-  samtools sort -@ ${task.cpus} -o ${sampleId}_sorted.bam -
-  """
+    bwa mem -t ${task.cpus} -M -R \"@RG\\tID:${sampleId}\\tSM:${sampleId}\\tPL:Illumina\" \
+    ${params.reference} ${reads} | \
+    samtools sort -@ ${task.cpus} -o ${sampleId}_sorted.bam -
+    """
+  }
+
 }
+
+
 
 
 // in the following process we call the VCF file of each sample
