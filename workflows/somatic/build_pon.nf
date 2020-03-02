@@ -77,19 +77,23 @@ if (params.fastqs) {
       .ifEmpty { error "Cannot find any reads matching ${params.fastqs}"}
       .set { samples_ch }
 }
-if (params.bams && params.realign) {
-  Channel
-      .fromPath("$params.bams/*.bam")
-      .ifEmpty { error "Cannot find any file matching ${params.bams}"}
-      .map { file -> tuple(file.baseName, file) }
-      .set { bams_ch }
-}
-if (params.bams && !params.realign) {
-  Channel
-      .fromPath("$params.bams/*.bam")
-      .ifEmpty { error "Cannot find any file matching ${params.bams}"}
-      .map { file -> tuple(file.baseName, file) }
-      .set { aligned_bams_ch }
+if (params.bams) {
+  if (params.realign){
+    Channel
+        .fromPath("$params.bams/*.bam")
+        .ifEmpty { error "Cannot find any file matching ${params.bams}"}
+        .map { file -> tuple(file.baseName, file) }
+        .set { bams_ch }
+    println("## NB: you have chosen to realign the bam files \n")
+  }
+  else {
+    Channel
+        .fromPath("$params.bams/*.bam")
+        .ifEmpty { error "Cannot find any file matching ${params.bams}"}
+        .map { file -> tuple(file.baseName, file) }
+        .set { aligned_bams_ch }
+    println("## NB: you have chosen NOT to realign the bam files \n")
+  }
 }
 else {
   error "you have not specified any input parameters"
