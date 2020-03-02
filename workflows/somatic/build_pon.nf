@@ -200,6 +200,9 @@ process CreatTumorOnlyCalls {
   script:
   """
   module load GATK/4.1.3.0
+  module load SAMTools/1.10
+
+  samtools index $bamfile
 
   gatk Mutect2 \
   -R $params.reference \
