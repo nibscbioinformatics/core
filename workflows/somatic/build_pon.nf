@@ -232,14 +232,15 @@ process GenomicsDB {
   publishDir "${params.output_dir}", mode: 'copy'
 
   input:
-  set file(vcfs), file(vcfindex) from vcf_ch.collect()
+  file(vcfdata) from vcf_ch.collect()
 
   output:
   file("pon_db") into pondb_ch
 
   script:
   vcfList = []
-  vcfs.each() { a -> vcfList.add("-V " + a) }
+  indexList = []
+  vcfdata.each() { a -> vcfList.add("-V " + a); b -> indexList.add(b) }
   inputVcfs = vcfList.join(" ")
   intervalsCommand = ""
   if (params.intervals) {
