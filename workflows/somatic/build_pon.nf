@@ -252,7 +252,7 @@ process GenomicsDB {
   module load GATK/4.1.3.0
 
   gatk GenomicsDBImport \
-  -R reference.fasta ${intervalsCommand}\
+  -R $params.reference ${intervalsCommand}\
   --genomicsdb-workspace-path pon_db \
   ${inputVcfs}
   """
