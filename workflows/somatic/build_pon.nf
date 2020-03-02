@@ -253,6 +253,7 @@ process GenomicsDB {
 
   gatk GenomicsDBImport \
   -R $params.reference ${intervalsCommand}\
+  --merge-input-intervals \
   --genomicsdb-workspace-path pon_db \
   ${inputVcfs}
   """
