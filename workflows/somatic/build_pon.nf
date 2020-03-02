@@ -40,6 +40,8 @@ log.info """\
         READS FOLDER: ${params.fastqs}
         BAMS FOLDER: ${params.bams}
         REFERENCE: ${params.reference}
+        GERMLINE RES: ${params.germline_resource}
+        INTERVALS: ${params.intervals}
         OUTPUT FOLDER ${params.output_dir}
         """
         .stripIndent()
@@ -56,10 +58,11 @@ if (params.help)
     log.info "--fastqs                       FASTQ FOLDER              Folder where paired end fastq reads files are located"
     log.info "--bams                         BAMS FOLDER               Folder where bam files are located"
     log.info "--references                   FASTA reference           Fasta reference file"
+    log.info "--germline_resource            GERMLINE resource         Gnomad file AF-only VCF to be used as germline resource"
+    log.info "--intervals                    INTERVALS list            BED file in case of capture (exome or panel)"
     log.info "--output_dir                   OUTPUT FOLDER             Folder where output reports and data will be copied"
     exit 1
 }
-
 
 
 if (params.fastqs) {
@@ -67,15 +70,166 @@ if (params.fastqs) {
       .fromFilePairs("$params.fastqs/*_{R1,R2}*.fastq.gz,")
       .ifEmpty { error "Cannot find any reads matching ${params.fastqs}"}
       .set { samples_ch }
-  mode = 'fastq'
 }
 if (params.bams) {
   Channel
       .fromPath("$params.bams/*.bam")
       .ifEmpty { error "Cannot find any file matching ${params.bams}"}
-      .set { samples_ch }
-  mode = 'bam'
+      .map { file -> tuple(file.baseName, file) }
+      .set { aligned_bams_ch }
 }
 else {
   error "you have not specified any input parameters"
+}
+
+
+// In case we don't already have alignments, we can just select the samples and
+// align the fastq to be used for the creation of the PON
+
+process AlignSamples {
+
+  tag "BWA alignment"
+  cpus 8
+  queue 'WORK'
+  time '24h'
+  memory '24 GB'
+
+  publishDir "${params.output_dir}/${sampleId}", mode: 'copy'
+
+  input:
+  set sampleId, file(reads) from samples_ch
+
+  output:
+  file("${sampleId}_sorted.bam") into aligned_bams_ch
+
+  when:
+  params.fastqs
+
+
+  script:
+  """
+  module load BWA/latest
+  module load SAMTools/1.10
+
+  bwa mem -t ${task.cpus} -M -R \"@RG\\tID:${sampleId}\\tSM:${sampleId}\\tPL:Illumina\" \
+  ${params.reference} ${reads} | \
+  samtools sort -@ ${task.cpus} -o ${sampleId}_sorted.bam -
+  """
+}
+
+
+// in the following process we call the VCF file of each sample
+// used to create the panel of normal
+// we use the bam files as channel, as it is created either by an alignment process
+// or by the path in the beginning
+// in both cases is a tuple with sample name so we can use it for the name
+// of the VCF file
+
+process CreatTumorOnlyCalls {
+
+  tag "Tumor Calls"
+  cpus 1
+  queue 'WORK'
+  memory { 12.GB * task.attempt }
+  time { 24.hour * task.attempt }
+  errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+  maxRetries 3
+
+  publishDir "${params.output_dir}/${sampleName}", mode: 'copy'
+
+  input:
+  set sampleName, file(bamfile) from aligned_bams_ch
+
+  output:
+  file("${sampleName}_normal.vcf.gz") into vcf_ch
+
+  script:
+  """
+  module load GATK/4.1.3.0
+
+  gatk Mutect2 \
+  -R $params.reference \
+  -I $bamfile \
+  --max-mnp-distance 0 \
+  -O "${sampleName}_normal.vcf.gz"
+
+  """
+}
+
+// Then we need to create a GenomicsDB
+// the main issue here is to use a variable number of VCF files
+// each introduced with -V into the GATK command line
+// so I'm going to use an array and then a join
+
+process GenomicsDB {
+
+  tag "GenomicsDB"
+  cpus 1
+  queue 'WORK'
+  memory { 12.GB * task.attempt }
+  time { 24.hour * task.attempt }
+  errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+  maxRetries 3
+
+  publishDir "${params.output_dir}", mode: 'copy'
+
+  input:
+  file(vcfs) from vcf_ch.collect()
+
+  output:
+  file("pon_db") into pondb_ch
+
+  script:
+  vcfList = []
+  vcfs.each() { a -> vcfList.add("-V " + a) }
+  inputVcfs = vcfList.join(" ")
+  intervalsCommand = ""
+  if (params.intervals) {
+    intervalsCommand = "-L ${params.intervals} "
+  }
+
+  """
+  module load GATK/4.1.3.0
+
+  gatk GenomicsDBImport \
+  -R reference.fasta ${intervalsCommand}\
+  --genomicsdb-workspace-path pon_db \
+  ${inputVcfs}
+  """
+
+}
+
+
+// once we have all the files we can now create the panel of normals
+
+
+process CreatePanelOfNormals {
+
+  tag "createPON"
+  cpus 1
+  queue 'WORK'
+  memory { 12.GB * task.attempt }
+  time { 24.hour * task.attempt }
+  errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+  maxRetries 3
+
+  publishDir "${params.output_dir}", mode: 'copy'
+
+  input:
+  file("pon_db") from pondb_ch
+
+  output:
+  file("pon.vcf.gz")
+
+  script:
+  """
+  module load GATK/4.1.3.0
+
+  gatk CreateSomaticPanelOfNormals \
+  -R $params.reference \
+  --germline-resource $params.germline_resource \
+  -V gendb://pon_db \
+  -O pon.vcf.gz
+  """
+
 }
