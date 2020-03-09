@@ -245,20 +245,26 @@ process CallMolecularConsensusReads {
 }
 
 
+// keep work folder for additional debugging
+// workflow.onComplete {
+//
+//   if( workflow.success ) {
+//     log.info("\nDone! Workflow completed\n")
+//     log.info("Removing all intermediate files now\n")
+//     log.info("Removing ${workflow.workDir}\n")
+//     deleteWork = workflow.workDir.deleteDir()
+//     log.info("Removing ${workflow.launchDir}/.nextflow/\n")
+//     mycache = file("${workflow.launchDir}/.nextflow")
+//     deleteCache = mycache.deleteDir()
+//   }
+//   else {
+//     log.info("Oops .. something went wrong\n")
+//     log.info("Pipeline execution stopped with the following message: ${workflow.errorMessage}")
+//   }
+// }
+
+
 
 workflow.onComplete {
-
-  if( workflow.success ) {
-    log.info("\nDone! Workflow completed\n")
-    log.info("Removing all intermediate files now\n")
-    log.info("Removing ${workflow.workDir}\n")
-    deleteWork = workflow.workDir.deleteDir()
-    log.info("Removing ${workflow.launchDir}/.nextflow/\n")
-    mycache = file("${workflow.launchDir}/.nextflow")
-    deleteCache = mycache.deleteDir()
-  }
-  else {
-    log.info("Oops .. something went wrong\n")
-    log.info("Pipeline execution stopped with the following message: ${workflow.errorMessage}")
-  }
+	log.info ( workflow.success ? "\nDone! Workflow completed\n" : "Oops .. something went wrong\n" )
 }
