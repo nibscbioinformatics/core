@@ -26,14 +26,18 @@ diroutput=$2 # /usr/share/sequencing/nextseq/output/200122_NB501506_0046_AH3CYJA
 mkdir -p /usr/share/sequencing/nextseq/processed/${sequencedate}/InterOp
 mkdir -p /usr/share/sequencing/nextseq/processed/${sequencedate}/log
 mkdir -p /usr/share/sequencing/nextseq/processed/${sequencedate}/bcl2fastq
-
+mkdir -p /usr/share/sequencing/nextseq/processed/${sequencedate}/fastq
 
 module load bcl2fastq/2.20
 
 #Make sure that the appropriate sample sheet is at:
 #/usr/share/sequencing/nextseq/processed/samplesheets/${sequencedate}_SampleSheet.csv
 
-bcl2fastq --barcode-mismatches 0 -R $diroutput --interop-dir /usr/share/sequencing/nextseq/processed/${sequencedate}/InterOp --sample-sheet /usr/share/sequencing/nextseq/processed/samplesheets/${sequencedate}_SampleSheet.csv -o /usr/share/sequencing/nextseq/processed/${sequencedate}/bcl2fastq --no-lane-splitting > /usr/share/sequencing/nextseq/processed/${sequencedate}/log/bcl2fastq.out 2> /usr/share/sequencing/nextseq/processed/${sequencedate}/log/bcl2fastq.err
+bcl2fastq --barcode-mismatches 0 -R $diroutput --interop-dir /usr/share/sequencing/nextseq/processed/${sequencedate}/InterOp --sample-sheet $diroutput/SampleSheet.csv -o /usr/share/sequencing/nextseq/processed/${sequencedate}/bcl2fastq --no-lane-splitting > /usr/share/sequencing/nextseq/processed/${sequencedate}/log/bcl2fastq.out 2> /usr/share/sequencing/nextseq/processed/${sequencedate}/log/bcl2fastq.err
+
+#Make symlinks to the fastq files into the folder fastq (so they are all in the same folder together for ease of use)
+cd /usr/share/sequencing/nextseq/processed/${sequencedate}/fastq
+for s in `find ../bcl2fastq -name "*.fastq.gz"` ; do ln -s $s ; done
 
 echo "####END job finished"
 endtime=`date +"%s"`
