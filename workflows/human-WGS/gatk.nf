@@ -3,19 +3,23 @@
 //This is a nextflow script to perform GATK4 best practice processing and apply haplotypecaller and mutect2
 
 params.referencefolder = "/usr/share/sequencing/references/homo_sapiens/hg19/gatk_references/" //we require there to already be indexed references here
-params.outdir = "/home/AD/tbleazar/228redo/output"
-//params.filepattern = "/home/AD/tbleazar/228redo/testinput/228_HT1080_test{_R1_001,_R2_001}.fastq.gz"
-params.filepattern = "/usr/share/sequencing/projects/228/trimmed/228_HT1080_WT_P15_S1{_R1_001,_R2_001}.fastq.gz"
+params.outdir = "."
+//params.filepattern = "/usr/share/sequencing/projects/228/trimmed/228_HT1080_WT_P15_S1{_R1_001,_R2_001}.fastq.gz"
+params.inputfolder = null
 params.cpus = "32"
 params.dbsnp = "b37_dbsnp_138.b37.vcf"
 params.goldindels = "b37_Mills_and_1000G_gold_standard.indels.b37.vcf"
 params.genomefasta = "hg19_v0_Homo_sapiens_assembly19.fasta"
 params.normpanel = "somatic-b37_Mutect2-WGS-panel-b37.vcf"
 params.gnomad = "somatic-b37_af-only-gnomad.raw.sites.vcf"
+params.frombam = false
 
-Channel
-  .fromFilePairs(params.filepattern)
-  .set { readpairs }
+if (!params.frombam) {
+  Channel
+    .fromFilePairs("$params.inputfolder/*{_R1,_R2}*.fastq.gz")
+    .ifEmpty { error "Cannot find any reads matching ${params.inputfolder}"}
+    .set { samples_ch }
+}
 
 references = Channel
   .fromPath(params.referencefolder)
@@ -37,8 +41,11 @@ process doalignment {
   memory '20 GB'
 
   input:
-  set ( sampleprefix, file(samples) ) from readpairs
+  set ( sampleprefix, file(samples) ) from samples_ch
   file refs from ref1.first()
+
+  when:
+  !params.frombam
 
   output:
   set ( sampleprefix, file("${sampleprefix}.unsorted.sam") ) into samfile
@@ -58,6 +65,9 @@ process sorttobam {
   input:
   set ( sampleprefix, file(unsortedsam) ) from samfile
 
+  when:
+  !params.frombam
+
   output:
   set ( sampleprefix, file("${sampleprefix}.sorted.bam") ) into sortedbam
 
@@ -65,6 +75,18 @@ process sorttobam {
   module load SAMTools/latest
   samtools sort -o ${sampleprefix}.sorted.bam -O BAM -@ ${params.cpus} ${unsortedsam}
   """
+}
+
+//entrypoint into pipeline if specified frombam input
+if (params.frombam) {
+  Channel
+    .fromPath("$params.inputfolder/*.bam")
+    .ifEmpty { error "Cannot find any bam files matching ${params.inputfolder}"}
+    .map { file ->
+      def prekey = file.name.toString().tokenize(".").get(0)
+      return tuple(key, file)
+    }
+    .set { sortedbam }
 }
 
 process markduplicates {
