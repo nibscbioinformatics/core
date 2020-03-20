@@ -92,8 +92,8 @@ if (params.frombam) {
 process markduplicates {
   cpus 8
   queue 'WORK'
-  time '8h'
-  memory '40 GB'
+  time '14h'
+  memory '180 GB'
 
   input:
   set ( sampleprefix, file(sortedbamfile) ) from sortedbam

@@ -24,6 +24,7 @@ In order to run the pipeline on a ordinary dataset, you should submit a job whic
 Within an interactive session on a HPC compute node, the command can be run with:
 
 module load NextFlow/latest
-nextflow run ~/CODE/core/workflows/human-WGS/gatk.nf --outdir <folder for output> --filepattern '<folder with input data>/*{_R1_001,_R2_001}.fastq.gz'
 
+nextflow run ~/CODE/core/workflows/human-WGS/gatk.nf --outdir /folder/for/output --inputfolder /folder/with/input/files
 
+This assumes that there are fastq.gz files within the input folder. Alternatively, it is possible to run this pipeline using BAM input data. For this, give the additional flag --frombam when running.
