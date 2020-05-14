@@ -20,8 +20,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r loading}
 options(warn=-1)
 
-list_sample_paths = strsplit(params$sample_paths, split = ',')[[1]]
-list_sample_names = strsplit(params$sample_names, split = ',')[[1]]
+list_sample_paths = params$sample_paths
 output_path = params$output_path
 
 library(Seurat)
@@ -30,7 +29,12 @@ library(Seurat)
 ## Create Seurat objects
 
 ```{r create_objects}
+list_samples = read.csv(list_sample_paths, sep = '\t', header = FALSE)
+list_sample_paths = as.character(list_samples$V1)
+list_sample_names = as.character(list_samples$V2)
+
 list_sample_objects = c()
+
 for (i in 1:length(list_sample_paths)) {
   sample_data = Read10X(list_sample_paths[i])
   sample_object = CreateSeuratObject(counts = sample_data, project = list_sample_names[i], min.cells = 3, min.features = 200)
