@@ -125,7 +125,7 @@ process reversesets {
 if (params.mergelanes) {
   readschannel = forwardsets.join(reversesets)
 } else {
-  filepattern = params.indir + "/*{_L001_R1_001,_L001_R2_001}.fastq.gz"
+  filepattern = params.indir + "/*{_R1,_R2}.fastq.gz"
   Channel.fromFilePairs(filepattern, flat: true).set{readschannel}
 }
 
@@ -140,12 +140,12 @@ process docutadapt {
   set ( sampleprefix, file(forwardraw), file(reverseraw) ) from readschannel
 
   output:
-  set ( sampleprefix, file("${sampleprefix}_L001_R1_001.trimmed.fastq.gz"), file("${sampleprefix}_L001_R2_001.trimmed.fastq.gz") ) into (trimmingoutput1, trimmingoutput2)
+  set ( sampleprefix, file("${sampleprefix}_R1.trimmed.fastq.gz"), file("${sampleprefix}_R2.trimmed.fastq.gz") ) into (trimmingoutput1, trimmingoutput2)
   file("${sampleprefix}.trim.out") into trimouts
 
   """
   module load CUTAdapt/latest
-  cutadapt -a file:${params.adapterfile} -A file:${params.adapterfile} -g file:${params.adapterfile} -G file:${params.adapterfile} -o ${sampleprefix}_L001_R1_001.trimmed.fastq.gz -p ${sampleprefix}_L001_R2_001.trimmed.fastq.gz ${forwardraw} ${reverseraw} -q 30,30 --minimum-length 50 --times 40 -e 0.1 --max-n 0 > ${sampleprefix}.trim.out 2> ${sampleprefix}.trim.err
+  cutadapt -a file:${params.adapterfile} -A file:${params.adapterfile} -g file:${params.adapterfile} -G file:${params.adapterfile} -o ${sampleprefix}_R1.trimmed.fastq.gz -p ${sampleprefix}_R2.trimmed.fastq.gz ${forwardraw} ${reverseraw} -q 30,30 --minimum-length 50 --times 40 -e 0.1 --max-n 0 > ${sampleprefix}.trim.out 2> ${sampleprefix}.trim.err
   """
 }
 
