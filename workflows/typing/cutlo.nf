@@ -3,7 +3,7 @@
 //Performs basic cutadapt trimming, then alignment with bwa, then variant calling with lofreq
 
 params.filepattern = "/usr/share/sequencing/miseq/output/161007_M01745_0131_000000000-ATN6R/Data/Intensities/BaseCalls/049*{_L001_R1_001,_L001_R2_001}.fastq.gz"
-params.adapterfile = "/home/AD/tbleazar/usrlocalmark/NexteraPE-PE.fa"
+params.adapterfile = "/usr/share/sequencing/references/adapters/NexteraPE-PE.fa" //alternatively use TruSeq for Nextseq runs
 params.outdir = "/home/AD/tbleazar/test"
 params.referencefolder = "/usr/share/sequencing/projects/049/input/reference/" //and it is required that this have an indexed genome already
 params.referencefile = "AY184219.fasta"
@@ -210,6 +210,11 @@ process varcall {
   """
 }
 
+//putting the bam and bai files ready to be handled all together for depth
+(bam_for_depth_ch, bai_for_depth_ch) = forcall2.into(2)
+bam_for_depth_ch = bam_for_depth_ch.map {it[1]}
+bai_for_depth_ch = bai_for_depth_ch.map {it[2]}
+
 process dodepth {
   publishDir "$params.outdir/alignments", mode: "copy"
   cpus 1
@@ -218,14 +223,20 @@ process dodepth {
   memory '50 GB'
 
   input:
-  set ( sampleprefix, file(indelqualfile), file(samindexfile) ) from forcall2
+  file("bamfiles/*") from bam_for_depth_ch.toSortedList()
+  file("baifiles/*") from bai_for_depth_ch.toSortedList()
 
   output:
-  set ( sampleprefix, file("${sampleprefix}.samtools.depth") ) into samdepthout
+  file ( "merged_samtools.depth") into samdepthout
 
   """
   module load SAMTools/latest
-  samtools depth -aa $indelqualfile > ${sampleprefix}.samtools.depth
+  ln -s bamfiles/*.bam .
+  ln -s baifiles/*.bai .
+  bamfiles=`ls *.bam`
+  samtools depth -aa -m 0 \$bamfiles > raw_samtools.depth
+  echo Region Position `echo \$bamfiles | sed 's/_indelqual.bam//g'` > header.txt
+  cat header.txt raw_samtools.depth > merged_samtools.depth
   """
 }
 
@@ -247,5 +258,3 @@ process makevartable {
   python $HOME/CODE/core/utilities/tablefromvcf.py $lofreqout ${sampleprefix}-variants.csv
   """
 }
-
-
