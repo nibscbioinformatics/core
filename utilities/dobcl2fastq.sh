@@ -39,6 +39,9 @@ bcl2fastq --barcode-mismatches 0 -R $diroutput --interop-dir /usr/share/sequenci
 cd /usr/share/sequencing/nextseq/processed/${sequencedate}/fastq
 for s in `find ../bcl2fastq -name "*.fastq.gz"` ; do ln -s $s ; done
 
+chown -R tbleazar.hpc_sequencing_writers /usr/share/sequencing/nextseq/processed/${sequencedate}
+chmod -R 755 /usr/share/sequencing/nextseq/processed/${sequencedate}
+
 echo "####END job finished"
 endtime=`date +"%s"`
 duration=$((endtime - starttime))
