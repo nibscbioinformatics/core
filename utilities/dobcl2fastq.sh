@@ -20,6 +20,8 @@ echo
 
 cd $PWD
 
+#export PATH="/opt/software/conda2/bin:/opt/software/conda2/condabin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
+
 sequencedate=$1 #200122
 diroutput=$2 # /usr/share/sequencing/nextseq/output/200122_NB501506_0046_AH3CYJAFX2/
 
