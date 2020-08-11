@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -l
 #SBATCH -p WORK # partition (queue)
 #SBATCH -N 1 # number of nodes
 #SBATCH -n 1 # number of tasks
