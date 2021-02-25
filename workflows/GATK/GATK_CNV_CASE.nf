@@ -1,8 +1,7 @@
 #!/opt/software/conda2/envs/NextFlow/bin/nextflow
 
 // Copyright (C) 2019 NIBSC/MHRA
-// Author: Francesco Lescai francesco.lescai@nibsc.org
-// Author: Thomas Bleazard thomas.bleazard@nibsc.org
+// Author: Pedro Raposo (pedro.raposo@nibsc.org)
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,18 +17,22 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // initialisation of parameters before passed by command line or config file
+params.picard = null
 params.bams = null
 params.realign = null
 params.fastqs = null
-params.output_dir     = "."
+params.output_dir = null
 params.reference = null
-params.germline_resource = null
+params.dictionary = null
 params.intervals = null
+params.cohort_ploidy_model = null
+cohort_cnv_caller_model = null
 params.help = null
+
 
 log.info ""
 log.info "-------------------------------------------------------------------------"
-log.info "  Build a Panel of Normals for Use with Mutect2    "
+log.info "  Detect germline CNVs using GATK Toolkit    "
 log.info "-------------------------------------------------------------------------"
 log.info "Copyright (C) NIBSC/MHRA"
 log.info "This program comes with ABSOLUTELY NO WARRANTY; for details see LICENSE"
@@ -38,15 +41,16 @@ log.info "under certain conditions; see LICENSE for details."
 log.info "-------------------------------------------------------------------------"
 log.info ""
 log.info """\
-
         PARAMETERS RECEIVED:
         --------------------------------
         READS FOLDER: ${params.fastqs}
         BAMS FOLDER: ${params.bams}
         REALIGN THE BAMS? ${params.realign}
         REFERENCE: ${params.reference}
-        GERMLINE RES: ${params.germline_resource}
+        DICTIONARY: ${params.dictionary}
         INTERVALS: ${params.intervals}
+        COHORT PLOIDY MODEL: ${params.cohort_ploidy_model}
+        COHORT CNV CALLER MODEL: ${params.cohort_cnv_caller_model}
         OUTPUT FOLDER ${params.output_dir}
         """
         .stripIndent()
@@ -54,22 +58,24 @@ log.info """\
 if (params.help)
 {
     log.info "---------------------------------------------------------------------"
-    log.info "  USAGE                                                 "
+    log.info "  Detect germline CNVs using GATK Toolkit  "
     log.info "---------------------------------------------------------------------"
     log.info ""
-    log.info "nextflow run nibsbioinformatics/core/workflows/somatic/build_pon.nf [OPTIONS]"
+    log.info "nextflow run nibsbioinformatics/core/workflows/GATK/build_pon.nf [OPTIONS]"
     log.info ""
     log.info "Mandatory arguments:"
-    log.info "--fastqs                       FASTQ FOLDER              Folder where paired end fastq reads files are located"
-    log.info "--bams                         BAMS FOLDER               Folder where bam files are located"
-    log.info "--realign                      BOOLEAN                   Use if you need to realign a bamfile input"
-    log.info "--reference                    FASTA reference           Fasta reference file"
-    log.info "--germline_resource            GERMLINE resource         Gnomad file AF-only VCF to be used as germline resource"
-    log.info "--intervals                    INTERVALS list            BED file in case of capture (exome or panel)"
-    log.info "--output_dir                   OUTPUT FOLDER             Folder where output reports and data will be copied"
+    log.info "--fastqs                       FASTQ FOLDER                 Folder where paired end fastq reads files are located"
+    log.info "--bams                         BAMS FOLDER                  Folder where bam files are located"
+    log.info "--realign                      BOOLEAN                      Use if you need to realign a bamfile input"
+    log.info "--reference                    FASTA reference              Fasta reference file"
+    log.info "--dictionary                   DICT file                    Dict file from reference file"
+    log.info "--intervals                    INTERVALS list               Filtered intervals used in cohort mode"
+	log.info "--contig_ploidy                CONTIG PLOIDY list           TSV file with contig ploidy priors"
+	log.info "--cohort_ploidy_model          COHORT PLOIDY model          Cohort ploidy model folder"
+	log.info "--cohort_cnv_caller_model      COHORT CNV CALLER model      Cohort CNV caller model folder"
+    log.info "--output_dir                   OUTPUT FOLDER                Folder where output reports and data will be copied"
     exit 1
 }
-
 
 if (params.fastqs) {
   Channel
@@ -99,11 +105,7 @@ else {
   error "you have not specified any input parameters"
 }
 
-
-// In case we don't already have alignments, we can just select the samples and
-// align the fastq to be used for the creation of the PON
-
-if (params.fastq) {
+if (params.fastqs) {
 
   process AlignSamples {
 
@@ -121,18 +123,16 @@ if (params.fastq) {
     output:
     tuple val(sampleId), file("${sampleId}_sorted.bam") into aligned_bams_ch
 
-
     script:
     """
-    module load BWA/latest
-    module load SAMTools/1.10
-
+	module load SAMTools
+	module load BWA
+	
     bwa mem -t ${task.cpus} -M -R \"@RG\\tID:${sampleId}\\tSM:${sampleId}\\tPL:Illumina\" \
     ${params.reference} ${reads} | \
     samtools sort -@ ${task.cpus} -o ${sampleId}_sorted.bam -
     """
   }
-
 }
 
 if (params.bams && params.realign) {
@@ -148,40 +148,31 @@ if (params.bams && params.realign) {
     // no publish dir, meaning all files are temporary
     // and will be stored in work directory until deletion
     // because in this case the aligned bam file is still UMI tagged
-
+	
     input:
     set sampleId, file(umappedBam) from bams_ch
 
     output:
-    tuple val(sampleId), file("${sampleId}_sorted.bam") into aligned_bams_ch
-
+    set sampleId, file("${sampleId}_sorted.bam") into aligned_bams_ch
 
     script:
     """
-    module load BWA/latest
-    module load SAMTools/1.10
-
-    samtools bam2fq -T RX ${umappedBam} | \
+	module load SAMTools
+	module load BWA
+	
+	java -jar ${params.picard} AddOrReplaceReadGroups I=${umappedBam} O=${sampleId}_group.bam RGID=${sampleId} RGLB=lib1 RGPL=ILLUMINA RGPU=unit1 RGSM=${sampleId}
+    
+	samtools bam2fq -T RX ${sampleId}_group.bam | \
     bwa mem -p -t ${task.cpus} -C -M -R \"@RG\\tID:${sampleId}\\tSM:${sampleId}\\tPL:Illumina\" \
     ${params.reference} - | \
     samtools sort -@ ${task.cpus} -o ${sampleId}_sorted.bam -
     """
-
   }
-
 }
 
+process CollectReadCounts {
 
-// in the following process we call the VCF file of each sample
-// used to create the panel of normal
-// we use the bam files as channel, as it is created either by an alignment process
-// or by the path in the beginning
-// in both cases is a tuple with sample name so we can use it for the name
-// of the VCF file
-
-process CreatTumorOnlyCalls {
-
-  tag "Tumor Calls"
+  tag "Collect Read Counts"
   cpus 1
   queue 'WORK'
   memory { 12.GB * task.attempt }
@@ -189,40 +180,29 @@ process CreatTumorOnlyCalls {
   errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
   maxRetries 3
 
-  publishDir "${params.output_dir}/${sampleName}", mode: 'copy'
-
   input:
-  set sampleName, file(bamfile) from aligned_bams_ch
+  set sampleId, file(bamfile) from aligned_bams_ch
 
   output:
-  file("${sampleName}_normal.vcf.gz") into vcf_ch
-  file("${sampleName}_normal.vcf.gz.tbi") into vcfindex_ch
+  set sampleId, file("${sampleId}.counts.hdf5") into hdf5_ch
   file("${bamfile}.bai")
 
   script:
   """
-  module load GATK/4.1.3.0
-  module load SAMTools/1.10
-
   samtools index $bamfile
-
-  gatk Mutect2 \
-  -R $params.reference \
-  -I $bamfile \
-  --max-mnp-distance 0 \
-  -O "${sampleName}_normal.vcf.gz"
-
+  
+  gatk CollectReadCounts \
+  -I ${bamfile} \
+  -L ${params.intervals} \
+  --interval-merging-rule OVERLAPPING_ONLY \
+  -O "${sampleId}.counts.hdf5" \
+  --tmp-dir /home/AD/praposo/Temp 
   """
 }
 
-// Then we need to create a GenomicsDB
-// the main issue here is to use a variable number of VCF files
-// each introduced with -V into the GATK command line
-// so I'm going to use an array and then a join
+process DetermineGermlineContigPloidy {
 
-process GenomicsDB {
-
-  tag "GenomicsDB"
+  tag "Determine Contig Ploidy"
   cpus 1
   queue 'WORK'
   memory { 12.GB * task.attempt }
@@ -233,40 +213,26 @@ process GenomicsDB {
   publishDir "${params.output_dir}", mode: 'copy'
 
   input:
-  file(vcfs) from vcf_ch.collect()
-  file(vcfindexes) from vcfindex_ch.collect()
+  set sampleId, file(hdf5) from hdf5_ch
 
   output:
-  file("pon_db") into pondb_ch
-
+  set file("ploidy_case_${sampleId}"), sampleId, file("${hdf5}") into germline_contig_ploidy_ch
+  
   script:
-  vcfList = []
-  vcfs.each() { a -> vcfList.add("-V " + a) }
-  inputVcfs = vcfList.join(" ")
-  intervalsCommand = ""
-  if (params.intervals) {
-    intervalsCommand = "-L ${params.intervals} "
-  }
-
   """
-  module load GATK/4.1.3.0
-
-  gatk GenomicsDBImport \
-  -R $params.reference ${intervalsCommand}\
-  --merge-input-intervals \
-  --genomicsdb-workspace-path pon_db \
-  ${inputVcfs}
+  gatk DetermineGermlineContigPloidy \
+  -I ${hdf5} \
+  --model ${params.cohort_ploidy_model} \
+  --output-prefix case \
+  --tmp-dir /home/AD/praposo/Temp \
+  --output "ploidy_case_${sampleId}" \
+  --verbosity DEBUG
   """
-
 }
 
+process GermlineCNVCaller {
 
-// once we have all the files we can now create the panel of normals
-
-
-process CreatePanelOfNormals {
-
-  tag "createPON"
+  tag "CNV Caller"
   cpus 1
   queue 'WORK'
   memory { 12.GB * task.attempt }
@@ -277,25 +243,60 @@ process CreatePanelOfNormals {
   publishDir "${params.output_dir}", mode: 'copy'
 
   input:
-  file("pon_db") from pondb_ch
+  set file(ploidy_case), sampleId, file(hdf5) from germline_contig_ploidy_ch
 
   output:
-  file("pon.vcf.gz")
-  file("pon.vcf.gz.tbi")
+  set file("${ploidy_case}"), sampleId, file("cnv_caller_case_${sampleId}") into cnv_caller_ch
 
   script:
   """
-  module load GATK/4.1.3.0
-
-  gatk CreateSomaticPanelOfNormals \
-  -R $params.reference \
-  --germline-resource $params.germline_resource \
-  -V gendb://pon_db \
-  -O pon.vcf.gz
+  gatk GermlineCNVCaller \
+  --run-mode CASE \
+  -I ${hdf5} \
+  --model ${params.cohort_cnv_caller_model} \
+  --contig-ploidy-calls ${ploidy_case}/case-calls \
+  --output "cnv_caller_case_${sampleId}" \
+  --output-prefix case \
+  --verbosity DEBUG \
+  --tmp-dir /home/AD/praposo/Temp
   """
 }
 
+process PostprocessGermlineCNVCalls {
 
+  tag "CNV Caller"
+  cpus 1
+  queue 'WORK'
+  memory { 12.GB * task.attempt }
+  time { 24.hour * task.attempt }
+  errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+  maxRetries 3
+
+  publishDir "${params.output_dir}", mode: 'copy'
+
+  input:
+  set file(ploidy_case), sampleId, file(cnv_caller) from cnv_caller_ch
+
+  output:
+  file("genotyped_intervals_case_${sampleId}.vcf.gz")
+  file("genotyped_segments_case_${sampleId}.vcf.gz")
+  file("genotyped_copy_ratios_case_${sampleId}.vcf.gz")
+
+  script:
+  """
+  gatk PostprocessGermlineCNVCalls \
+  --model-shard-path ${params.cohort_cnv_caller_model} \
+  --calls-shard-path ${cnv_caller}/case-calls \
+  --contig-ploidy-calls ${ploidy_case}/case-calls \
+  --allosomal-contig X --allosomal-contig Y \
+  --output-genotyped-intervals "genotyped_intervals_case_${sampleId}.vcf.gz" \
+  --output-genotyped-segments "genotyped_segments_case_${sampleId}.vcf.gz" \
+  --output-denoised-copy-ratios "genotyped_copy_ratios_case_${sampleId}.vcf.gz" \
+  --sequence-dictionary ${params.dictionary} \
+  --tmp-dir /home/AD/praposo/Temp \
+  --verbosity ERROR
+  """
+}
 
 workflow.onComplete {
 	log.info ( workflow.success ? "\nDone! Workflow completed\n" : "Oops .. something went wrong\n" )

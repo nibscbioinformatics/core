@@ -2,25 +2,6 @@
 
 //This is a nextflow script to perform GATK4 best practice processing and apply haplotypecaller and mutect2
 
-params.referencefolder = "/usr/share/sequencing/references/homo_sapiens/hg19/gatk_references/" //we require there to already be indexed references here
-params.outdir = "."
-//params.filepattern = "/usr/share/sequencing/projects/228/trimmed/228_HT1080_WT_P15_S1{_R1_001,_R2_001}.fastq.gz"
-params.inputfolder = null
-params.cpus = "32"
-params.dbsnp = "b37_dbsnp_138.b37.vcf"
-params.goldindels = "b37_Mills_and_1000G_gold_standard.indels.b37.vcf"
-params.genomefasta = "hg19_v0_Homo_sapiens_assembly19.fasta"
-params.normpanel = "somatic-b37_Mutect2-WGS-panel-b37.vcf"
-params.gnomad = "somatic-b37_af-only-gnomad.raw.sites.vcf"
-params.frombam = false
-
-if (!params.frombam) {
-  Channel
-    .fromFilePairs("$params.inputfolder/*{_R1,_R2}*.fastq.gz")
-    .ifEmpty { error "Cannot find any reads matching ${params.inputfolder}"}
-    .set { samples_ch }
-}
-
 references = Channel
   .fromPath(params.referencefolder)
 
@@ -32,61 +13,108 @@ references.into {
   ref5
   ref6
   ref7
+  ref8
 }
 
-process doalignment {
-  cpus 32
-  queue 'WORK'
-  time '48h'
-  memory '20 GB'
-
-  input:
-  set ( sampleprefix, file(samples) ) from samples_ch
-  file refs from ref1.first()
-
-  when:
-  !params.frombam
-
-  output:
-  set ( sampleprefix, file("${sampleprefix}.unsorted.sam") ) into samfile
-
-  """
-  module load BWA/latest
-  bwa mem -t ${params.cpus} -M -R '@RG\\tID:${sampleprefix}\\tSM:${sampleprefix}\\tPL:Illumina' ${refs}/${params.genomefasta} ${samples[0]} ${samples[1]} > ${sampleprefix}.unsorted.sam
-  """
-}
-
-process sorttobam {
-  cpus 8
-  queue 'WORK'
-  time '8h'
-  memory '40 GB'
-
-  input:
-  set ( sampleprefix, file(unsortedsam) ) from samfile
-
-  when:
-  !params.frombam
-
-  output:
-  set ( sampleprefix, file("${sampleprefix}.sorted.bam") ) into sortedbam
-
-  """
-  module load SAMTools/latest
-  samtools sort -o ${sampleprefix}.sorted.bam -O BAM -@ ${params.cpus} ${unsortedsam}
-  """
-}
-
-//entrypoint into pipeline if specified frombam input
-if (params.frombam) {
+if (params.fastqs) {
   Channel
-    .fromPath("$params.inputfolder/*.bam")
-    .ifEmpty { error "Cannot find any bam files matching ${params.inputfolder}"}
-    .map { file ->
-      def prekey = file.name.toString().tokenize(".").get(0)
-      return tuple(key, file)
-    }
-    .set { sortedbam }
+      .fromFilePairs("$params.fastqs/*_{R1,R2}*.fastq.gz")
+      .ifEmpty { error "Cannot find any reads matching ${params.fastqs}"}
+      .set { samples_ch }
+}
+else if (params.bams) {
+  if (params.realign){
+    Channel
+        .fromPath("$params.bams/*.bam")
+        .ifEmpty { error "Cannot find any file matching ${params.bams}"}
+        .map { file -> tuple(file.baseName, file) }
+        .set { bams_ch }
+    println("## NB: you have chosen to realign the bam files \n")
+  }
+  else {
+    Channel
+        .fromPath("$params.bams/*.bam")
+        .ifEmpty { error "Cannot find any file matching ${params.bams}"}
+        .map { file -> tuple(file.baseName, file) }
+        .set { aligned_bams_ch }
+    println("## NB: you have chosen NOT to realign the bam files \n")
+  }
+}
+else {
+  error "you have not specified any input parameters"
+}
+
+
+// In case we don't already have alignments, we can just select the samples and
+// align the fastq to be used for the creation of the PON
+
+if (params.fastq) {
+
+  process AlignSamples {
+
+    tag "BWA alignment"
+    cpus 8
+    queue 'WORK'
+    time '24h'
+    memory '24 GB'
+
+    publishDir "${params.output_dir}/${sampleId}", mode: 'copy'
+
+    input:
+    set sampleId, file(reads) from samples_ch
+
+    output:
+    tuple val(sampleId), file("${sampleId}_sorted.bam") into aligned_bams_ch
+
+
+    script:
+    """
+    module load BWA/latest
+    module load SAMTools/1.10
+
+    bwa mem -t ${task.cpus} -M -R \"@RG\\tID:${sampleId}\\tSM:${sampleId}\\tPL:Illumina\" \
+    ${refs}/${params.genomefasta} ${reads} | \
+    samtools sort -@ ${task.cpus} -o ${sampleId}_sorted.bam -
+    """
+  }
+
+}
+
+if (params.bams && params.realign) {
+
+  process realignBams {
+
+    tag "BWA alignment"
+    cpus 8
+    queue 'WORK'
+    time '24h'
+    memory '24 GB'
+
+    // no publish dir, meaning all files are temporary
+    // and will be stored in work directory until deletion
+    // because in this case the aligned bam file is still UMI tagged
+
+    input:
+    set sampleId, file(umappedBam) from bams_ch
+	file refs from ref1.first()
+
+    output:
+    tuple val(sampleId), file("${sampleId}_sorted.bam") into aligned_bams_ch
+
+
+    script:
+    """
+    module load BWA/latest
+    module load SAMTools/latest
+
+    samtools bam2fq -T RX ${umappedBam} | \
+    bwa mem -p -t ${task.cpus} -C -M -R \"@RG\\tID:${sampleId}\\tSM:${sampleId}\\tPL:Illumina\" \
+    ${refs}/${params.genomefasta} - | \
+    samtools sort -@ ${task.cpus} -o ${sampleId}_sorted.bam -
+    """
+
+  }
+
 }
 
 process markduplicates {
@@ -96,7 +124,7 @@ process markduplicates {
   memory '180 GB'
 
   input:
-  set ( sampleprefix, file(sortedbamfile) ) from sortedbam
+  set ( sampleprefix, file(sortedbamfile) ) from aligned_bams_ch
 
   output:
   set ( sampleprefix, file("${sampleprefix}.marked.bam") ) into (markedbamfortable, markedbamforapply)
@@ -119,7 +147,9 @@ process baserecalibrationtable {
 
   output:
   set ( sampleprefix, file("${sampleprefix}.recal_data.table") ) into recaltable
-
+  
+  script:
+  
   """
   module load GATK/4.1.3.0
   gatk BaseRecalibrator -I $markedbamfile --known-sites ${refs}/${params.dbsnp} --known-sites ${refs}/${params.goldindels} -O ${sampleprefix}.recal_data.table -R ${refs}/${params.genomefasta}
@@ -185,6 +215,8 @@ process haplotypecall {
   output:
   set ( sampleprefix, file("${sampleprefix}.hapcalled.vcf") ) into calledhaps
 
+  script:
+ 
   """
   module load GATK/4.1.3.0
   gatk HaplotypeCaller -R ${refs}/${params.genomefasta} -O ${sampleprefix}.hapcalled.vcf -I $bamfile --native-pair-hmm-threads ${params.cpus} --dbsnp ${refs}/${params.dbsnp}
@@ -204,9 +236,11 @@ process mutectcall {
   output:
   set ( sampleprefix, file("${sampleprefix}.mutcalled.vcf"), file("${sampleprefix}.mutcalled.vcf.stats") ) into calledmuts
 
+  script:
+  
   """
   module load GATK/4.1.3.0
-  gatk Mutect2 -R ${refs}/${params.genomefasta} -O ${sampleprefix}.mutcalled.vcf -I $bamfile --native-pair-hmm-threads ${params.cpus} --panel-of-normals ${refs}/${params.normpanel} --germline-resource ${refs}/${params.gnomad}
+  gatk Mutect2 -R ${refs}/${params.genomefasta} -O ${sampleprefix}.mutcalled.vcf -I $bamfile --native-pair-hmm-threads ${params.cpus} --panel-of-normals /home/AD/praposo/WGS/GIAB/somatic-b37_Mutect2-WGS-panel-b37.vcf --germline-resource ${refs}/${params.gnomad}
   """
 }
 
@@ -222,7 +256,9 @@ process mutectfilter {
 
   output:
   set ( sampleprefix, file("${sampleprefix}.mutcalled.filtered.vcf") ) into filteredmuts
-
+  
+  script:
+  
   """
   module load GATK/4.1.3.0
   gatk FilterMutectCalls -R ${refs}/${params.genomefasta} -V $mutvcf -O ${sampleprefix}.mutcalled.filtered.vcf
@@ -235,7 +271,7 @@ process snpindelsplit {
   cpus 8
   queue 'WORK'
   time '8h'
-  memory '40 GB'
+  memory '120 GB'
 
   input:
   set ( sampleprefix, file(hapfile), file(mutfile) ) from rawvars
@@ -245,10 +281,10 @@ process snpindelsplit {
 
   """
   module load GATK/4.1.3.0
-  gatk SelectVariants -V $hapfile -O ${sampleprefix}.hapcalled.snp.vcf -select-type SNP
-  gatk SelectVariants -V $hapfile -O ${sampleprefix}.hapcalled.indel.vcf -select-type INDEL
-  gatk SelectVariants -V $mutfile -O ${sampleprefix}.mutcalled.snp.vcf -select-type SNP
-  gatk SelectVariants -V $mutfile -O ${sampleprefix}.mutcalled.indel.vcf -select-type INDEL
+  gatk --java-options "-Xmx120G" SelectVariants -V $hapfile -O ${sampleprefix}.hapcalled.snp.vcf -select-type SNP
+  gatk --java-options "-Xmx120G" SelectVariants -V $hapfile -O ${sampleprefix}.hapcalled.indel.vcf -select-type INDEL
+  gatk --java-options "-Xmx120G" SelectVariants -V $mutfile -O ${sampleprefix}.mutcalled.snp.vcf -select-type SNP
+  gatk --java-options "-Xmx120G" SelectVariants -V $mutfile -O ${sampleprefix}.mutcalled.indel.vcf -select-type INDEL
   """
 }
 
@@ -284,7 +320,7 @@ process remergevars {
   set ( sampleprefix, file(germlinesnp), file(germlineindel), file(somaticsnp), file(somaticindel) ) from filteredvars
 
   output:
-  set ( sampleprefix, file("${sampleprefix}.germline.vcf"), file("${sampleprefix}.germline.vcf.idx"), file("${sampleprefix}.somatic.vcf"), file("${sampleprefix}.somatic.vcf.idx") ) into (germsomvars1, germsomvars2)
+  set ( sampleprefix, file("${sampleprefix}.germline.vcf"), file("${sampleprefix}.germline.vcf.idx"), file("${sampleprefix}.somatic.vcf"), file("${sampleprefix}.somatic.vcf.idx") ) into (germsomvars1, germsomvars2, germsomvars3)
 
   """
   module load GATK/4.1.3.0
@@ -325,7 +361,7 @@ process effectprediction {
   set ( sampleprefix, file(germline), file(germlineindex), file(somatic), file(somaticindex) ) from germsomvars2
 
   output:
-  set ( sampleprefix, file("${sampleprefix}.germline.annotated.vcf"), file("${sampleprefix}.somatic.annotated.vcf") ) into annotatedvars
+  set ( sampleprefix, file("${sampleprefix}.germline.annotated.vcf"), file("${sampleprefix}.somatic.annotated.vcf") ) into effectpredicted
 
   """
   module load snpeff/4.3.1t
@@ -334,4 +370,25 @@ process effectprediction {
   """
 }
 
+process annotation {
+  publishDir "$params.outdir/analysis", mode: "copy"
+  cpus 8
+  queue 'WORK'
+  time '8h'
+  memory '40 GB'
 
+  input:
+  set ( sampleprefix, file(germline), file(germlineindex), file(somatic), file(somaticindex) ) from germsomvars3
+  file refs from ref8.first()
+
+  output:
+  set ( sampleprefix, file("${sampleprefix}.germline.funcotated.maf"), file("${sampleprefix}.somatic.funcotated.maf") ) into annotatedvars
+
+  """
+  module load GATK/4.1.3.0
+  module load snpsift/4.3.1t
+  
+  gatk Funcotator -R ${refs}/${params.genomefasta} -V $germline -O ${sampleprefix}.germline.funcotated.maf --output-file-format MAF --data-sources-path ${params.funcotator} --ref-version hg19 --annotation-default tumor_barcode:${sampleprefix} --remove-filtered-variants true --transcript-selection-mode BEST_EFFECT
+  gatk Funcotator -R ${refs}/${params.genomefasta} -V $somatic -O ${sampleprefix}.somatic.funcotated.maf --output-file-format MAF --data-sources-path ${params.funcotator} --ref-version hg19 --annotation-default tumor_barcode:${sampleprefix} --remove-filtered-variants true --transcript-selection-mode BEST_EFFECT
+  """
+}
