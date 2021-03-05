@@ -16,7 +16,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-// initialisation of parameters before passed by command line or config file
+
+// Initialisation of parameters before passed by command line or config file
+
 params.picard = null
 params.bams = null
 params.realign = null
@@ -55,6 +57,7 @@ log.info """\
         """
         .stripIndent()
 
+		
 if (params.help)
 {
     log.info "---------------------------------------------------------------------"
@@ -76,6 +79,7 @@ if (params.help)
     log.info "--output_dir                   OUTPUT FOLDER                Folder where output reports and data will be copied"
     exit 1
 }
+
 
 if (params.fastqs) {
   Channel
@@ -104,6 +108,10 @@ else if (params.bams) {
 else {
   error "you have not specified any input parameters"
 }
+
+
+// In case we don't already have alignments, we can just select the samples and
+// align the fastq to be used for the creation of the model
 
 if (params.fastqs) {
 
@@ -134,6 +142,9 @@ if (params.fastqs) {
     """
   }
 }
+
+
+// If we have alignments but we want to realign with BWA MEM
 
 if (params.bams && params.realign) {
 
@@ -170,6 +181,9 @@ if (params.bams && params.realign) {
   }
 }
 
+
+// It is counted the number of reads in the sample for each interval
+
 process CollectReadCounts {
 
   tag "Collect Read Counts"
@@ -200,6 +214,10 @@ process CollectReadCounts {
   """
 }
 
+
+// It determines baseline contig ploidies using the total read count per contig
+// for autosomal and allosomal chromosomes
+
 process DetermineGermlineContigPloidy {
 
   tag "Determine Contig Ploidy"
@@ -229,6 +247,10 @@ process DetermineGermlineContigPloidy {
   --verbosity DEBUG
   """
 }
+
+
+// Detects the CNV variantions within the sample, based on its contig ploidy.
+// Extra parameters are included for WGS to increase sensitivity
 
 process GermlineCNVCaller {
 
@@ -261,6 +283,9 @@ process GermlineCNVCaller {
   --tmp-dir /home/AD/praposo/Temp
   """
 }
+
+
+// Consolidates the CNV variant results into VCF files 
 
 process PostprocessGermlineCNVCalls {
 

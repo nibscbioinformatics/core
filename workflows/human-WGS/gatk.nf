@@ -388,7 +388,7 @@ process annotation {
   module load GATK/4.1.3.0
   module load snpsift/4.3.1t
   
-  gatk Funcotator -R ${refs}/${params.genomefasta} -V $germline -O ${sampleprefix}.germline.funcotated.maf --output-file-format MAF --data-sources-path ${params.funcotator} --ref-version hg19 --annotation-default tumor_barcode:${sampleprefix} --remove-filtered-variants true --transcript-selection-mode BEST_EFFECT
-  gatk Funcotator -R ${refs}/${params.genomefasta} -V $somatic -O ${sampleprefix}.somatic.funcotated.maf --output-file-format MAF --data-sources-path ${params.funcotator} --ref-version hg19 --annotation-default tumor_barcode:${sampleprefix} --remove-filtered-variants true --transcript-selection-mode BEST_EFFECT
+  gatk Funcotator -R ${refs}/${params.genomefasta} -V $germline -O ${sampleprefix}.germline.funcotated.maf --output-file-format MAF --data-sources-path ${params.funcotator} --ref-version ${params.version} --annotation-default tumor_barcode:${sampleprefix} --remove-filtered-variants true --transcript-selection-mode BEST_EFFECT
+  gatk Funcotator -R ${refs}/${params.genomefasta} -V $somatic -O ${sampleprefix}.somatic.funcotated.maf --output-file-format MAF --data-sources-path ${params.funcotator} --ref-version ${params.version} --annotation-default tumor_barcode:${sampleprefix} --remove-filtered-variants true --transcript-selection-mode BEST_EFFECT
   """
 }

@@ -17,7 +17,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-// initialisation of parameters before passed by command line or config file
+
+// Initialisation of parameters before passed by command line or config file
+
 params.bams = null
 params.realign = null
 params.fastqs = null
@@ -63,6 +65,7 @@ log.info """\
         """
         .stripIndent()
 
+
 if (params.help)
 {
     log.info "---------------------------------------------------------------------"
@@ -87,6 +90,7 @@ if (params.help)
     log.info "--output_dir                   OUTPUT FOLDER                Folder where output reports and data will be copied"
     exit 1
 }
+
 
 if (params.dictionary) {
   Channel
@@ -152,8 +156,9 @@ else {
   error "you have not specified any input parameters"
 }
 
+
 // In case we don't already have alignments, we can just select the samples and
-// align the fastq to be used for the creation of the PON
+// align the fastq to be used for the creation of the model
 
 if (params.fastqs) {
 
@@ -185,6 +190,9 @@ if (params.fastqs) {
   }
 }
 
+
+// If we have alignments but we want to realign with BWA MEM
+
 if (params.bams && params.realign) {
 
   process realignBams {
@@ -203,20 +211,28 @@ if (params.bams && params.realign) {
     set sampleId, file(umappedBam) from bams_ch
 
     output:
-    tuple val(sampleId), file("${sampleId}_sorted.bam") into aligned_bams_ch
+    set val(sampleId), file("${sampleId}.chr1toY.bam") into aligned_bams_ch
+	file("${sampleId}.chr1toY.bam.bai")
 
     script:
     """
+	module load SAMTools/latest
+	module load BWA/latest
+	
     samtools bam2fq -T RX ${umappedBam} | \
     bwa mem -p -t ${task.cpus} -C -M -R \"@RG\\tID:${sampleId}\\tSM:${sampleId}\\tPL:Illumina\" \
     ${params.reference} - | \
     samtools sort -@ ${task.cpus} -o ${sampleId}_sorted.bam -
+	
+	samtools view -L ${params.chromosomes} -o ${sampleId}.chr1toY.bam ${sampleId}_sorted.bam
+	samtools index ${sampleId}.chr1toY.bam
     """
   }
 }
 
 
-//
+// For WES, this steps padds the intervals and for the WGS it divides
+// the genome into bins, to be used as segments in the CNV detection
 
 process PreprocessIntervals {
 
@@ -255,6 +271,9 @@ intervals_ch.into {
   intervals_branch_4
 }
 
+
+// It is counted the number of reads in the sample for each interval
+
 process CollectReadCounts {
 
   tag "Collect Read Counts"
@@ -271,13 +290,11 @@ process CollectReadCounts {
 
   output:
   file("${sampleId}.counts.hdf5") into hdf5_ch
-  file("${bamfile}.bai")
 
   script:
   """
-  samtools index $bamfile
   gatk CollectReadCounts \
-  -I $bamfile \
+  -I ${sampleId}.chr1toY.bam \
   -L ${preprocessed_intervals} \
   --interval-merging-rule OVERLAPPING_ONLY \
   -O "${sampleId}.counts.hdf5" \
@@ -291,6 +308,10 @@ hdf5_ch.into {
   hdf5_branch_3
   hdf5_branch_4
   }
+
+  
+// Annotate intervals to remove problematic genomic regions defined by CG content,
+// or explicitily mappability and segmentation duplication
   
 process AnnotateIntervals {
 
@@ -339,6 +360,10 @@ annotated_intervals_ch.into {
   annotated_intervals_branch_2
 }
 
+
+// Exclude counted reads based on the previously annotated intervals,
+// genomic low complexity regions, or pseudoautossomal regions 
+
 process FilterIntervals {
 
   tag "Filter Intervals"
@@ -379,8 +404,14 @@ process FilterIntervals {
 }
 
 filtered_intervals_ch.into {
+  filtered_intervals_branch_1
+  filtered_intervals_branch_2
   filtered_intervals_branch_3
 }
+
+
+// It determines baseline contig ploidies using the total read count per contig
+// for autosomal and allosomal chromosomes
 
 process DetermineGermlineContigPloidy {
 
@@ -397,6 +428,7 @@ process DetermineGermlineContigPloidy {
   input:
   file(hdf5) from hdf5_branch_2.collect()
   file(contig_ploidy) from contig_ploidy_ch
+  file(intervals) from filtered_intervals_branch_2
 
   output:
   file("ploidy_cohort") into germline_contig_ploidy_ch
@@ -411,7 +443,7 @@ process DetermineGermlineContigPloidy {
   -imr OVERLAPPING_ONLY \
   --contig-ploidy-priors ${contig_ploidy} \
   --output-prefix cohort \
-  -L ${params.intervals} \
+  -L ${intervals} \
   ${inputHdf5} \
   --tmp-dir /home/AD/praposo/Temp \
   --output ploidy_cohort \
@@ -423,6 +455,10 @@ germline_contig_ploidy_ch.into {
   germline_contig_ploidy_branch_1
   germline_contig_ploidy_branch_2
 }
+
+
+// Detects the CNV variantions within the sample, based on its contig ploidy.
+// Extra parameters are included for WGS to increase sensitivity
 
 process GermlineCNVCaller {
 
@@ -440,6 +476,7 @@ process GermlineCNVCaller {
   file(hdf5) from hdf5_branch_4.collect()
   file(contig_ploidy) from germline_contig_ploidy_branch_1
   file(annotated_intervals) from annotated_intervals_branch_2
+  file(intervals) from filtered_intervals_branch_1
 
   output:
   file("cnv_caller_cohort") into cnv_caller_ch
@@ -455,7 +492,7 @@ process GermlineCNVCaller {
   """
   gatk GermlineCNVCaller \
   --run-mode COHORT \
-  -L ${params.intervals} \
+  -L ${intervals} \
   --annotated-intervals ${annotated_intervals} \
   ${inputHdf5} \
   -imr OVERLAPPING_ONLY \
@@ -467,6 +504,9 @@ process GermlineCNVCaller {
   --tmp-dir /home/AD/praposo/Temp
   """
 }
+
+
+// Consolidates the CNV variant results into VCF files 
 
 process PostprocessGermlineCNVCalls {
 

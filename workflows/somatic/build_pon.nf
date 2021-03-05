@@ -210,6 +210,7 @@ process CreatTumorOnlyCalls {
   -R $params.reference \
   -I $bamfile \
   --max-mnp-distance 0 \
+  --germline-resource $params.germline_resource \
   -O "${sampleName}_normal.vcf.gz"
 
   """
@@ -289,7 +290,6 @@ process CreatePanelOfNormals {
 
   gatk CreateSomaticPanelOfNormals \
   -R $params.reference \
-  --germline-resource $params.germline_resource \
   -V gendb://pon_db \
   -O pon.vcf.gz
   """
