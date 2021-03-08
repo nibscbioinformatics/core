@@ -17,7 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-// initialisation of parameters before passed by command line or config file
+
+// Initialisation of parameters before passed by command line or config file
 params.bams = null
 params.realign = null
 params.fastqs = null
@@ -26,6 +27,7 @@ params.reference = null
 params.germline_resource = null
 params.intervals = null
 params.help = null
+
 
 log.info ""
 log.info "-------------------------------------------------------------------------"
@@ -51,6 +53,7 @@ log.info """\
         """
         .stripIndent()
 
+		
 if (params.help)
 {
     log.info "---------------------------------------------------------------------"
@@ -216,6 +219,7 @@ process CreatTumorOnlyCalls {
   """
 }
 
+
 // Then we need to create a GenomicsDB
 // the main issue here is to use a variable number of VCF files
 // each introduced with -V into the GATK command line
@@ -262,8 +266,7 @@ process GenomicsDB {
 }
 
 
-// once we have all the files we can now create the panel of normals
-
+// Once we have all the files we can now create the panel of normals
 
 process CreatePanelOfNormals {
 
@@ -294,7 +297,6 @@ process CreatePanelOfNormals {
   -O pon.vcf.gz
   """
 }
-
 
 
 workflow.onComplete {
