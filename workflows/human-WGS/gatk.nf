@@ -353,6 +353,7 @@ process mutectfilter {
   
   """
   module load GATK/4.1.3.0
+  gatk IndexFeatureFile -F $mutvcf
   gatk FilterMutectCalls -R ${params.reference} -V $mutvcf -O ${sampleprefix}.mutcalled.filtered.vcf ${optionalCommand}
   """
 }
