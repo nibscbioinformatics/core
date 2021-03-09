@@ -128,7 +128,7 @@ if (params.fastq) {
     script:
     """
     module load BWA/latest
-    module load SAMTools/1.10
+    module load SAMTools/latest
 
     bwa mem -t ${task.cpus} -M -R \"@RG\\tID:${sampleId}\\tSM:${sampleId}\\tPL:Illumina\" \
     ${params.reference} ${reads} | \
@@ -162,7 +162,7 @@ if (params.bams && params.realign) {
     script:
     """
     module load BWA/latest
-    module load SAMTools/1.10
+    module load SAMTools/latest
 
     samtools bam2fq -T RX ${umappedBam} | \
     bwa mem -p -t ${task.cpus} -C -M -R \"@RG\\tID:${sampleId}\\tSM:${sampleId}\\tPL:Illumina\" \
@@ -205,7 +205,7 @@ process CreatTumorOnlyCalls {
   script:
   """
   module load GATK/4.1.3.0
-  module load SAMTools/1.10
+  module load SAMTools/latest
 
   samtools index $bamfile
 

@@ -1,20 +1,99 @@
 #!/opt/software/conda2/envs/NextFlow/bin/nextflow
 
-//This is a nextflow script to perform GATK4 best practice processing and apply haplotypecaller and mutect2
+// Copyright (C) 2019 NIBSC/MHRA
+// Author: Tom Bleazard (tom.bleazard@nibsc.org)
+// Author: Pedro Raposo (pedro.raposo@nibsc.org)
 
-references = Channel
-  .fromPath(params.referencefolder)
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 
-references.into {
-  ref1
-  ref2
-  ref3
-  ref4
-  ref5
-  ref6
-  ref7
-  ref8
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+// Initialisation of parameters before passed by command line or config file
+
+params.bams = null
+params.realign = null
+params.fastqs = null
+params.output_dir = null
+params.reference = null
+params.intervals = null
+params.scale = null
+params.cpus = 32
+params.dbsnp = null
+params.goldindels = null
+params.pon = null
+params.gnomad = null
+params.funcotator = null
+params.version = null
+params.help = null
+
+
+log.info ""
+log.info "-------------------------------------------------------------------------"
+log.info "  Detect SNP and indels using GATK Toolkit  "
+log.info "-------------------------------------------------------------------------"
+log.info "Copyright (C) NIBSC/MHRA"
+log.info "This program comes with ABSOLUTELY NO WARRANTY; for details see LICENSE"
+log.info "This is free software, and you are welcome to redistribute it"
+log.info "under certain conditions; see LICENSE for details."
+log.info "-------------------------------------------------------------------------"
+log.info ""
+log.info """\
+        PARAMETERS RECEIVED:
+        --------------------------------
+        READS FOLDER: ${params.fastqs}
+        BAMS FOLDER: ${params.bams}
+        REALIGN THE BAMS? ${params.realign}
+        REFERENCE: ${params.reference}
+        INTERVALS: ${params.intervals}
+        SCALE: ${params.scale}
+        CPUS: ${params.cpus}
+        DBSNP FILE: ${params.dbsnp}
+        GOLDINDEL FILE: ${params.goldindels}
+        PANEL OF NORMALS FILE: ${params.pon}
+        GNOMAD FILE: ${params.gnomad}
+        FUNCOTATOR FOLDER: ${params.funcotator}
+        GENOME VERSION: ${params.version}
+		OUTPUT FOLDER: ${params.output_dir}
+        """
+        .stripIndent()
+
+		
+if (params.help)
+{
+    log.info "---------------------------------------------------------------------"
+    log.info "  Detect germline CNVs using GATK Toolkit  "
+    log.info "---------------------------------------------------------------------"
+    log.info ""
+    log.info "nextflow run nibsbioinformatics/core/workflows/GATK/build_pon.nf [OPTIONS]"
+    log.info ""
+    log.info "Mandatory arguments:"
+    log.info "--fastqs                       FASTQ folder                 Folder where paired end fastq reads files are located"
+    log.info "--bams                         BAMS folder                  Folder where bam files are located"
+    log.info "--realign                      BOOLEAN                      Use if you need to realign a bamfile input"
+    log.info "--reference                    FASTA REFERENCE file         Fasta reference file"
+    log.info "--intervals                    INTERVALS list               Intervals used in analysis"
+	log.info "--scale                        SCALE string                 Scale of analysis ('wgs' or 'exome')"
+	log.info "--cpus                         CPUS integer                 CPUs to be used in the analysis"
+	log.info "--dbsnp                        DBSNP file                   dbSNP file"
+	log.info "--goldindels                   GOLDINDEL file               GoldIndel file"
+	log.info "--pon                          PANEL OF NORMALS file        Panel of normals made from 'built_pon.nf'"
+	log.info "--gnomad                       GNOMAD file                  Gnomad file"
+	log.info "--funcotator                   FUNCOTATOR folder            Downloaded FUNCotator folder"
+	log.info "--version                      Genome VERSION string        Genome version used ('hg19' or 'hg38')"
+    log.info "--output_dir                   OUTPUT FOLDER                Folder where output reports and data will be copied"	
+    exit 1
 }
+
 
 if (params.fastqs) {
   Channel
@@ -70,10 +149,10 @@ if (params.fastq) {
     script:
     """
     module load BWA/latest
-    module load SAMTools/1.10
+    module load SAMTools/latest
 
     bwa mem -t ${task.cpus} -M -R \"@RG\\tID:${sampleId}\\tSM:${sampleId}\\tPL:Illumina\" \
-    ${refs}/${params.genomefasta} ${reads} | \
+    ${params.reference} ${reads} | \
     samtools sort -@ ${task.cpus} -o ${sampleId}_sorted.bam -
     """
   }
@@ -96,7 +175,6 @@ if (params.bams && params.realign) {
 
     input:
     set sampleId, file(umappedBam) from bams_ch
-	file refs from ref1.first()
 
     output:
     tuple val(sampleId), file("${sampleId}_sorted.bam") into aligned_bams_ch
@@ -109,7 +187,7 @@ if (params.bams && params.realign) {
 
     samtools bam2fq -T RX ${umappedBam} | \
     bwa mem -p -t ${task.cpus} -C -M -R \"@RG\\tID:${sampleId}\\tSM:${sampleId}\\tPL:Illumina\" \
-    ${refs}/${params.genomefasta} - | \
+    ${params.reference} - | \
     samtools sort -@ ${task.cpus} -o ${sampleId}_sorted.bam -
     """
 
@@ -131,7 +209,9 @@ process markduplicates {
 
   """
   module load GATK/4.1.3.0
+  module load SAMTools/latest
   gatk MarkDuplicates -I $sortedbamfile -M ${sampleprefix}.metrics.txt -O ${sampleprefix}.marked.bam
+  samtools index ${sampleprefix}.marked.bam
   """
 }
 
@@ -143,23 +223,26 @@ process baserecalibrationtable {
 
   input:
   set ( sampleprefix, file(markedbamfile) ) from markedbamfortable
-  file refs from ref2.first()
 
   output:
   set ( sampleprefix, file("${sampleprefix}.recal_data.table") ) into recaltable
   
   script:
+  optinalCommand = ""
+  if (params.scale == "exome") {
+    optionalCommand = "-L ${params.intervals}"
+  }
   
   """
   module load GATK/4.1.3.0
-  gatk BaseRecalibrator -I $markedbamfile --known-sites ${refs}/${params.dbsnp} --known-sites ${refs}/${params.goldindels} -O ${sampleprefix}.recal_data.table -R ${refs}/${params.genomefasta}
+  gatk BaseRecalibrator -I $markedbamfile --known-sites ${params.dbsnp} --known-sites ${params.goldindels} -O ${sampleprefix}.recal_data.table -R ${params.reference} ${optinalCommand}
   """
 }
 
 forrecal = recaltable.join(markedbamforapply)
 
 process applybaserecalibration {
-  publishDir "$params.outdir/alignments", mode: "copy"
+  publishDir "$params.output_dir/alignments", mode: "copy"
   cpus 8
   queue 'WORK'
   time '16h'
@@ -178,7 +261,7 @@ process applybaserecalibration {
 }
 
 process indexrecalibrated {
-  publishDir "$params.outdir/alignments", mode: "copy"
+  publishDir "$params.output_dir/alignments", mode: "copy"
   cpus 8
   queue 'WORK'
   time '16h'
@@ -210,16 +293,19 @@ process haplotypecall {
 
   input:
   set ( sampleprefix, file(bamfile), file(baifile) ) from forcaller1
-  file refs from ref3.first()
 
   output:
   set ( sampleprefix, file("${sampleprefix}.hapcalled.vcf") ) into calledhaps
 
   script:
- 
+  optinalCommand = ""
+  if (params.scale == "exome") {
+    optionalCommand = "-L ${params.intervals}"
+  }
+  
   """
   module load GATK/4.1.3.0
-  gatk HaplotypeCaller -R ${refs}/${params.genomefasta} -O ${sampleprefix}.hapcalled.vcf -I $bamfile --native-pair-hmm-threads ${params.cpus} --dbsnp ${refs}/${params.dbsnp}
+  gatk HaplotypeCaller -R ${params.reference} -O ${sampleprefix}.hapcalled.vcf -I $bamfile --native-pair-hmm-threads ${params.cpus} --dbsnp ${params.dbsnp} ${optionalCommand}
   """
 }
 
@@ -231,16 +317,19 @@ process mutectcall {
 
   input:
   set ( sampleprefix, file(bamfile), file(baifile) ) from forcaller2
-  file refs from ref4.first()
 
   output:
   set ( sampleprefix, file("${sampleprefix}.mutcalled.vcf"), file("${sampleprefix}.mutcalled.vcf.stats") ) into calledmuts
 
   script:
+  optinalCommand = ""
+  if (params.scale == "exome") {
+    optionalCommand = "-L ${params.intervals}"
+  }
   
   """
   module load GATK/4.1.3.0
-  gatk Mutect2 -R ${refs}/${params.genomefasta} -O ${sampleprefix}.mutcalled.vcf -I $bamfile --native-pair-hmm-threads ${params.cpus} --panel-of-normals /home/AD/praposo/WGS/GIAB/somatic-b37_Mutect2-WGS-panel-b37.vcf --germline-resource ${refs}/${params.gnomad}
+  gatk Mutect2 -R ${params.reference} -O ${sampleprefix}.mutcalled.vcf -I $bamfile --native-pair-hmm-threads ${params.cpus} --panel-of-normals ${params.pon} --germline-resource ${params.gnomad} ${optionalCommand}
   """
 }
 
@@ -252,16 +341,19 @@ process mutectfilter {
 
   input:
   set ( sampleprefix, file(mutvcf), file(mutstats) ) from calledmuts
-  file refs from ref7.first()
 
   output:
   set ( sampleprefix, file("${sampleprefix}.mutcalled.filtered.vcf") ) into filteredmuts
   
   script:
+  optinalCommand = ""
+  if (params.scale == "exome") {
+    optionalCommand = "-L ${params.intervals}"
+  }
   
   """
   module load GATK/4.1.3.0
-  gatk FilterMutectCalls -R ${refs}/${params.genomefasta} -V $mutvcf -O ${sampleprefix}.mutcalled.filtered.vcf
+  gatk FilterMutectCalls -R ${params.reference} -V $mutvcf -O ${sampleprefix}.mutcalled.filtered.vcf ${optionalCommand}
   """
 }
 
@@ -296,17 +388,16 @@ process hardfilter {
 
   input:
   set ( sampleprefix, file(hapsnp), file(hapindel), file(mutsnp), file(mutindel) ) from splitupvars
-  file refs from ref5.first()
 
   output:
   set ( sampleprefix, file("${sampleprefix}.germline.filtered.snp.vcf"), file("${sampleprefix}.germline.filtered.indel.vcf"), file("${sampleprefix}.somatic.filtered.snp.vcf"), file("${sampleprefix}.somatic.filtered.indel.vcf") ) into filteredvars
 
   """
   module load GATK/4.1.3.0
-  gatk VariantFiltration -O ${sampleprefix}.germline.filtered.snp.vcf -V $hapsnp -R ${refs}/${params.genomefasta} --filter-name snpfilter --filter-expression "QD < 2.0 || MQ < 40.0 || FS > 60.0 || SOR > 3.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0"
-  gatk VariantFiltration -O ${sampleprefix}.germline.filtered.indel.vcf -V $hapindel -R ${refs}/${params.genomefasta} --filter-name indelfilter --filter-expression "QD < 2.0 || FS > 200.0 || SOR > 10.0 || ReadPosRankSum < -20.0"
-  gatk VariantFiltration -O ${sampleprefix}.somatic.filtered.snp.vcf -V $mutsnp -R ${refs}/${params.genomefasta} --filter-name snpfilter --filter-expression "QD < 2.0 || MQ < 40.0 || FS > 60.0 || SOR > 3.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0"
-  gatk VariantFiltration -O ${sampleprefix}.somatic.filtered.indel.vcf -V $mutindel -R ${refs}/${params.genomefasta} --filter-name indelfilter --filter-expression "QD < 2.0 || FS > 200.0 || SOR > 10.0 || ReadPosRankSum < -20.0"
+  gatk VariantFiltration -O ${sampleprefix}.germline.filtered.snp.vcf -V $hapsnp -R ${params.reference} --filter-name snpfilter --filter-expression "QD < 2.0 || MQ < 40.0 || FS > 60.0 || SOR > 3.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0"
+  gatk VariantFiltration -O ${sampleprefix}.germline.filtered.indel.vcf -V $hapindel -R ${params.reference} --filter-name indelfilter --filter-expression "QD < 2.0 || FS > 200.0 || SOR > 10.0 || ReadPosRankSum < -20.0"
+  gatk VariantFiltration -O ${sampleprefix}.somatic.filtered.snp.vcf -V $mutsnp -R ${params.reference} --filter-name snpfilter --filter-expression "QD < 2.0 || MQ < 40.0 || FS > 60.0 || SOR > 3.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0"
+  gatk VariantFiltration -O ${sampleprefix}.somatic.filtered.indel.vcf -V $mutindel -R ${params.reference} --filter-name indelfilter --filter-expression "QD < 2.0 || FS > 200.0 || SOR > 10.0 || ReadPosRankSum < -20.0"
   """
 }
 
@@ -330,7 +421,7 @@ process remergevars {
 }
 
 process variantevaluation {
-  publishDir "$params.outdir/analysis", mode: "copy"
+  publishDir "$params.output_dir/analysis", mode: "copy"
   cpus 8
   queue 'WORK'
   time '8h'
@@ -338,20 +429,19 @@ process variantevaluation {
 
   input:
   set ( sampleprefix, file(germline), file(germlineindex), file(somatic), file(somaticindex) ) from germsomvars1
-  file refs from ref6.first()
 
   output:
   set ( sampleprefix, file("${sampleprefix}.germline.eval.grp"), file("${sampleprefix}.somatic.eval.grp") ) into variantevaluations
 
   """
   module load GATK/4.1.3.0
-  gatk VariantEval -eval $germline -O ${sampleprefix}.germline.eval.grp -R ${refs}/${params.genomefasta} -D ${refs}/${params.dbsnp}
-  gatk VariantEval -eval $somatic -O ${sampleprefix}.somatic.eval.grp -R ${refs}/${params.genomefasta} -D ${refs}/${params.dbsnp}
+  gatk VariantEval -eval $germline -O ${sampleprefix}.germline.eval.grp -R ${params.reference} -D ${params.dbsnp}
+  gatk VariantEval -eval $somatic -O ${sampleprefix}.somatic.eval.grp -R ${params.reference} -D ${params.dbsnp}
   """
 }
 
 process effectprediction {
-  publishDir "$params.outdir/analysis", mode: "copy"
+  publishDir "$params.output_dir/analysis", mode: "copy"
   cpus 8
   queue 'WORK'
   time '8h'
@@ -371,7 +461,7 @@ process effectprediction {
 }
 
 process annotation {
-  publishDir "$params.outdir/analysis", mode: "copy"
+  publishDir "$params.output_dir/analysis", mode: "copy"
   cpus 8
   queue 'WORK'
   time '8h'
@@ -379,16 +469,14 @@ process annotation {
 
   input:
   set ( sampleprefix, file(germline), file(germlineindex), file(somatic), file(somaticindex) ) from germsomvars3
-  file refs from ref8.first()
 
   output:
   set ( sampleprefix, file("${sampleprefix}.germline.funcotated.maf"), file("${sampleprefix}.somatic.funcotated.maf") ) into annotatedvars
 
   """
   module load GATK/4.1.3.0
-  module load snpsift/4.3.1t
   
-  gatk Funcotator -R ${refs}/${params.genomefasta} -V $germline -O ${sampleprefix}.germline.funcotated.maf --output-file-format MAF --data-sources-path ${params.funcotator} --ref-version ${params.version} --annotation-default tumor_barcode:${sampleprefix} --remove-filtered-variants true --transcript-selection-mode BEST_EFFECT
-  gatk Funcotator -R ${refs}/${params.genomefasta} -V $somatic -O ${sampleprefix}.somatic.funcotated.maf --output-file-format MAF --data-sources-path ${params.funcotator} --ref-version ${params.version} --annotation-default tumor_barcode:${sampleprefix} --remove-filtered-variants true --transcript-selection-mode BEST_EFFECT
+  gatk Funcotator -R ${params.reference} -V $germline -O ${sampleprefix}.germline.funcotated.maf --output-file-format MAF --data-sources-path ${params.funcotator} --ref-version ${params.version} --annotation-default tumor_barcode:${sampleprefix} --remove-filtered-variants true --transcript-selection-mode BEST_EFFECT
+  gatk Funcotator -R ${params.reference} -V $somatic -O ${sampleprefix}.somatic.funcotated.maf --output-file-format MAF --data-sources-path ${params.funcotator} --ref-version ${params.version} --annotation-default tumor_barcode:${sampleprefix} --remove-filtered-variants true --transcript-selection-mode BEST_EFFECT
   """
 }

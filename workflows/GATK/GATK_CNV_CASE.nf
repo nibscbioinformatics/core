@@ -1,6 +1,6 @@
 #!/opt/software/conda2/envs/NextFlow/bin/nextflow
 
-// Copyright (C) 2019 NIBSC/MHRA
+// Copyright (C) 2020 NIBSC/MHRA
 // Author: Pedro Raposo (pedro.raposo@nibsc.org)
 
 // This program is free software: you can redistribute it and/or modify
@@ -28,13 +28,13 @@ params.reference = null
 params.dictionary = null
 params.intervals = null
 params.cohort_ploidy_model = null
-cohort_cnv_caller_model = null
+params.cohort_cnv_caller_model = null
 params.help = null
 
 
 log.info ""
 log.info "-------------------------------------------------------------------------"
-log.info "  Detect germline CNVs using GATK Toolkit    "
+log.info "  Detect germline CNVs using GATK Toolkit  "
 log.info "-------------------------------------------------------------------------"
 log.info "Copyright (C) NIBSC/MHRA"
 log.info "This program comes with ABSOLUTELY NO WARRANTY; for details see LICENSE"
@@ -64,7 +64,7 @@ if (params.help)
     log.info "  Detect germline CNVs using GATK Toolkit  "
     log.info "---------------------------------------------------------------------"
     log.info ""
-    log.info "nextflow run nibsbioinformatics/core/workflows/GATK/build_pon.nf [OPTIONS]"
+    log.info "nextflow run nibsbioinformatics/core/workflows/GATK/GATK_CNV_CASE.nf [OPTIONS]"
     log.info ""
     log.info "Mandatory arguments:"
     log.info "--fastqs                       FASTQ FOLDER                 Folder where paired end fastq reads files are located"
