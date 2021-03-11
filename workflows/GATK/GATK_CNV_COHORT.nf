@@ -32,6 +32,7 @@ params.lcr_intervals = null
 params.par_intervals = null
 params.contig_ploidy = null
 params.scale = null
+params.tmp_dir = null
 params.help = null
 
 
@@ -60,6 +61,7 @@ log.info """\
         PAR INTERVALS: ${params.par_intervals}
         CONTIG PLOIDY: ${params.contig_ploidy}
 		SCALE: ${params.scale}
+		TEMPORARY DIRECTORY: ${params.tmp_dir}
         OUTPUT FOLDER ${params.output_dir}
         """
         .stripIndent()
@@ -86,10 +88,10 @@ if (params.help)
 	log.info "--par_intervals                PAR INTERVAL list            BED file with pseudoautossomal regions to exclude (exome or panel)"
 	log.info "--scale                        STRING                       'wgs' for whole-genome sequencing or 'exome' for exome or panel"
 	log.info "--contig_ploidy                CONTIG PLOIDY list           TSV file with contig ploidy priors"
+	log.info "--tmp_dir                      TEMPORARY folder             Folder where the temporary data is stored"	
     log.info "--output_dir                   OUTPUT FOLDER                Folder where output reports and data will be copied"
     exit 1
 }
-
 
 if (params.dictionary) {
   Channel
@@ -259,7 +261,7 @@ process PreprocessIntervals {
   -R ${params.reference} \
   --interval-merging-rule OVERLAPPING_ONLY \
   -O preprocessed.interval_list \
-  --tmp-dir /home/AD/praposo/Temp
+  --tmp-dir ${params.tmp_dir}
   """
 }
 
@@ -293,11 +295,11 @@ process CollectReadCounts {
   script:
   """
   gatk CollectReadCounts \
-  -I ${sampleId}.chr1toY.bam \
+  -I ${bamfile} \
   -L ${preprocessed_intervals} \
   --interval-merging-rule OVERLAPPING_ONLY \
   -O "${sampleId}.counts.hdf5" \
-  --tmp-dir /home/AD/praposo/Temp 
+  --tmp-dir ${params.tmp_dir} 
   """
 }
 
@@ -350,7 +352,7 @@ process AnnotateIntervals {
   -L ${preprocessed_intervals} ${optionalCommand} \
   --interval-merging-rule OVERLAPPING_ONLY \
   -O "annotated_intervals.tsv" \
-  --tmp-dir /home/AD/praposo/Temp 
+  --tmp-dir ${params.tmp_dir} 
   """
 }
 
@@ -398,7 +400,7 @@ process FilterIntervals {
   ${inputHdf5} \
   -imr OVERLAPPING_ONLY \
   -O "filtered_intervals.intervals" \
-  --tmp-dir /home/AD/praposo/Temp 
+  --tmp-dir ${params.tmp_dir} 
   """
 }
 
@@ -444,7 +446,7 @@ process DetermineGermlineContigPloidy {
   --output-prefix cohort \
   -L ${intervals} \
   ${inputHdf5} \
-  --tmp-dir /home/AD/praposo/Temp \
+  --tmp-dir ${params.tmp_dir} \
   --output ploidy_cohort \
   --verbosity DEBUG
   """
@@ -500,7 +502,7 @@ process GermlineCNVCaller {
   --output-prefix cohort \
   --verbosity DEBUG \
   ${optionalCommand} \
-  --tmp-dir /home/AD/praposo/Temp
+  --tmp-dir ${params.tmp_dir}
   """
 }
 
@@ -540,7 +542,7 @@ process PostprocessGermlineCNVCalls {
   --output-genotyped-segments genotyped_segments_cohort.vcf.gz \
   --output-denoised-copy-ratios genotyped_copy_ratios_cohort.vcf.gz \
   --sequence-dictionary ${dictionary} \
-  --tmp-dir /home/AD/praposo/Temp \
+  --tmp-dir ${params.tmp_dir} \
   --verbosity ERROR
   """
 }
