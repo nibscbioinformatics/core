@@ -29,6 +29,7 @@ params.dictionary = null
 params.intervals = null
 params.cohort_ploidy_model = null
 params.cohort_cnv_caller_model = null
+params.tmp_dir = null
 params.help = null
 
 
@@ -53,6 +54,7 @@ log.info """\
         INTERVALS: ${params.intervals}
         COHORT PLOIDY MODEL: ${params.cohort_ploidy_model}
         COHORT CNV CALLER MODEL: ${params.cohort_cnv_caller_model}
+		TEMPORARY DIRECTORY: ${params.tmp_dir}
         OUTPUT FOLDER ${params.output_dir}
         """
         .stripIndent()
@@ -76,6 +78,7 @@ if (params.help)
 	log.info "--contig_ploidy                CONTIG PLOIDY list           TSV file with contig ploidy priors"
 	log.info "--cohort_ploidy_model          COHORT PLOIDY model          Cohort ploidy model folder"
 	log.info "--cohort_cnv_caller_model      COHORT CNV CALLER model      Cohort CNV caller model folder"
+	log.info "--tmp_dir                      TEMPORARY folder             Folder where the temporary data is stored"
     log.info "--output_dir                   OUTPUT FOLDER                Folder where output reports and data will be copied"
     exit 1
 }
@@ -210,7 +213,7 @@ process CollectReadCounts {
   -L ${params.intervals} \
   --interval-merging-rule OVERLAPPING_ONLY \
   -O "${sampleId}.counts.hdf5" \
-  --tmp-dir /home/AD/praposo/Temp 
+  --tmp-dir ${params.tmp_dir} 
   """
 }
 
@@ -242,7 +245,7 @@ process DetermineGermlineContigPloidy {
   -I ${hdf5} \
   --model ${params.cohort_ploidy_model} \
   --output-prefix case \
-  --tmp-dir /home/AD/praposo/Temp \
+  --tmp-dir ${params.tmp_dir} \
   --output "ploidy_case_${sampleId}" \
   --verbosity DEBUG
   """
@@ -280,7 +283,7 @@ process GermlineCNVCaller {
   --output "cnv_caller_case_${sampleId}" \
   --output-prefix case \
   --verbosity DEBUG \
-  --tmp-dir /home/AD/praposo/Temp
+  --tmp-dir ${params.tmp_dir}
   """
 }
 
@@ -318,7 +321,7 @@ process PostprocessGermlineCNVCalls {
   --output-genotyped-segments "genotyped_segments_case_${sampleId}.vcf.gz" \
   --output-denoised-copy-ratios "genotyped_copy_ratios_case_${sampleId}.vcf.gz" \
   --sequence-dictionary ${params.dictionary} \
-  --tmp-dir /home/AD/praposo/Temp \
+  --tmp-dir ${params.tmp_dir} \
   --verbosity ERROR
   """
 }
